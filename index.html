@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Learning IFR</title>
+<meta name="theme-color" content="#142029">
+<meta name="description" content="Préparation théorique IFR et ATPL : fiches mémo, calcul mental et QCM, avec mode voix">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Learning IFR">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Colonne unique type planche d'approche, bandeau supérieur façon planche de bord, lectures instrument sombres, accent magenta GPS */
+:root{
+  --bg:#EEF2F5; --surface:#FFFFFF; --ink:#14202B; --muted:#5A6B79; --line:#D3DCE3;
+  --accent:#B5166F; --accent-soft:#F7E3EE;
+  --panel:#142029; --panel-ink:#E5ECF1;
+  --ro-bg:#142029; --ro-fg:#6FDCFA; --ro-label:#8DA2B3;
+  --ok:#23804F; --ok-soft:#E1F2E8; --err:#B83A2E; --err-soft:#F8E4E1;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0D141A; --surface:#15202A; --ink:#E5ECF1; --muted:#8FA2B1; --line:#25343F;
+  --accent:#F064B2; --accent-soft:#3A1A2D;
+  --panel:#091016; --panel-ink:#E5ECF1;
+  --ro-bg:#091016; --ro-fg:#6FDCFA; --ro-label:#7D93A3;
+  --ok:#52C78C; --ok-soft:#14301F; --err:#F07D72; --err-soft:#3A1C19; color-scheme:dark}}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;padding-bottom:max(40px,env(safe-area-inset-bottom,0px))}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:600 15px var(--f-body);border-radius:8px;cursor:pointer;padding:10px 16px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink)}
+button:disabled{opacity:.5;cursor:default}
+.btn{display:inline-flex;align-items:center;font:600 15px var(--f-body);border-radius:8px;padding:10px 16px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);text-decoration:none}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.ghost{background:transparent;color:var(--muted);border-color:transparent;padding-inline:8px}
+.small{font-size:13px;padding:6px 12px}
+
+
+/* Bandeau */
+.top{position:sticky;top:0;z-index:5;background:var(--panel);color:var(--panel-ink);padding-top:env(safe-area-inset-top,0px)}
+.top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:54px}
+.back{background:transparent;border:0;color:var(--panel-ink);font-size:22px;line-height:1;padding:6px 8px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:1.35rem;letter-spacing:.02em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand i{font-style:normal;color:#F064B2}
+.top-actions{display:flex;gap:8px;align-items:center}
+.voice-btn{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--f-body);padding:7px 12px;border-radius:999px;border:1.5px solid #F064B2;background:transparent;color:#F7A8D3}
+.voice-btn[aria-pressed="true"]{background:#F064B2;color:#14202B}
+.voice-btn svg{width:15px;height:15px}
+.install{display:none;background:transparent;color:var(--panel-ink);border-color:#3A4B58}
+
+main{max-width:760px;margin:0 auto;padding-top:20px;display:flex;flex-direction:column;gap:20px}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--f-display);font-weight:700;font-size:2.4rem;line-height:1.02;margin:4px 0 0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:600;font-size:1.45rem;margin:0;text-wrap:balance}
+.lead{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.score{font-family:var(--f-mono);font-size:13px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* Listes de matières et de blocs */
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.item{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.item:first-child{border-top:0}
+a.item:hover{background:var(--bg)}
+.code{font-family:var(--f-mono);font-weight:600;font-size:14px;color:var(--accent)}
+.item.off .code,.item.off .name{color:var(--muted)}
+.name{font-weight:500}
+.meta{font-size:13px;color:var(--muted)}
+.chev{color:var(--muted);font-size:18px}
+.tag{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px;max-width:220px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.block{display:flex;flex-direction:column;gap:10px;padding:14px;border-top:1px solid var(--line)}
+.block:first-child{border-top:0}
+.block-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.block-top .meta{font-family:var(--f-mono);white-space:nowrap}
+
+/* Fiche mémo */
+.memo{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;border-top:3px solid var(--accent)}
+.memo h3{margin:18px 0 8px;font-size:11px;font-family:var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.memo h3:first-child{margin-top:0}
+.memo dl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:6px 16px;margin:0}
+.memo dt{color:var(--muted);font-size:14px}
+.memo dd{margin:0;font-family:var(--f-mono);font-size:13.5px;overflow-wrap:anywhere}
+.memo ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;max-width:65ch}
+.memo p{max-width:65ch}
+
+/* Carte d'entraînement */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:16px;border-top:3px solid var(--accent)}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.cat{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.ttl{font-family:var(--f-display);font-weight:600;font-size:1.35rem;line-height:1.1;margin-top:2px}
+.head-r{display:flex;gap:8px;align-items:center}
+.timer{font-family:var(--f-mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.readouts{display:flex;flex-wrap:wrap;gap:8px}
+.ro{background:var(--ro-bg);border-radius:6px;padding:8px 12px;min-width:92px}
+.ro span{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ro-label)}
+.ro b{font-family:var(--f-mono);font-weight:600;font-size:1.15rem;color:var(--ro-fg);font-variant-numeric:tabular-nums}
+.q{font-size:1.08rem;margin:0;max-width:62ch}
+.listen{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 12px;min-height:40px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.listen.on .dot{background:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.listen.on .dot{animation:pulse 1s ease-in-out infinite}@keyframes pulse{50%{transform:scale(1.5);opacity:.5}}}
+.heard{color:var(--ink);overflow-wrap:anywhere;min-width:0}
+.mic{margin-left:auto}
+.answer{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.field{display:flex;align-items:center;flex:1 1 180px;min-width:0;border:1.5px solid var(--line);border-radius:8px;background:var(--bg)}
+.field:focus-within{border-color:var(--accent)}
+.field input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:600 1.5rem var(--f-mono);padding:10px 12px;outline:none}
+.unit{font-family:var(--f-mono);font-size:13px;color:var(--muted);padding-right:12px;white-space:nowrap}
+.pm{font-family:var(--f-mono);min-width:48px}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;text-align:left;font-weight:500;align-items:start}
+.choice .k{font-family:var(--f-mono);font-weight:600;color:var(--accent)}
+.choice:disabled{opacity:1;cursor:default}
+.choice.good{border-color:var(--ok);background:var(--ok-soft)}
+.choice.bad{border-color:var(--err);background:var(--err-soft)}
+.fb{border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.fb.ok{background:var(--ok-soft)} .fb.err{background:var(--err-soft)}
+.verdict{font-weight:600}
+.fb.ok .verdict{color:var(--ok)} .fb.err .verdict{color:var(--err)}
+.steps{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
+.steps b,.verdict b{font-family:var(--f-mono)}
+.tip{font-size:14px;color:var(--muted);margin:0}
+details summary{cursor:pointer;font-size:14px;color:var(--muted)}
+.next-row{display:flex;justify-content:flex-end}
+.note{font-size:13px;color:var(--muted);margin:0}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.foot p{margin:0;font-size:13px;color:var(--muted)}
+@media (max-width:480px){.memo dl{grid-template-columns:1fr}.memo dd{margin-bottom:8px}h1{font-size:2rem}.item{grid-template-columns:44px minmax(0,1fr) auto}}
+@media (prefers-reduced-motion:no-preference){.fb{animation:in .18s ease-out}@keyframes in{from{transform:translateY(4px);opacity:.4}}}
+</style>
+</head>
+<body>
+<header class="top gut">
+  <div class="top-in">
+    <button type="button" class="back" id="back" aria-label="Retour" hidden>←</button>
+    <div class="brand" id="brand">Learning <i>IFR</i></div>
+    <div class="top-actions">
+      <button type="button" class="voice-btn" id="voice" aria-pressed="false" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        <span id="voiceLbl">Voix</span>
+      </button>
+      <button type="button" class="small install" id="install">Installer</button>
+    </div>
+  </div>
+</header>
+<main class="gut" id="view"></main>
+
+<!-- Outils partagés par les modules -->
+<script>
+window.LI={modules:[],register(m){this.modules.push(m)}};
+const R=(a,b,s=1)=>a+s*Math.floor(Math.random()*(Math.floor((b-a)/s)+1));
+const P=a=>a[Math.floor(Math.random()*a.length)];
+const fmt=n=>(Math.round(n*100)/100).toLocaleString('fr-FR',{maximumFractionDigits:2});
+const H=n=>{n=((Math.round(n)%360)+360)%360;if(n===0)n=360;return String(n).padStart(3,'0')};
+const sgn=n=>(n>0?'+':n<0?'−':'')+fmt(Math.abs(n));
+const near=t=>(v,a)=>Math.abs(v-a)<=t+1e-9;
+const pct=(p,m)=>(v,a)=>Math.abs(v-a)<=Math.max(m,Math.abs(a)*p)+1e-9;
+const FL=f=>'FL'+String(f).padStart(3,'0');
+</script>
+<!-- Contenus : un fichier par matière. Ajouter ici les nouveaux modules (et dans sw.js). -->
+<script src="modules/ifr-calcul-mental.js"></script>
+<script src="modules/022-instrumentation.js"></script>
+
+<script>
+/* ================= Programme ATPL (EASA) ================= */
+const ATPL=[
+ ['010','Droit aérien et procédures ATC'],['021','Cellule, systèmes et motorisation'],['022','Instrumentation'],
+ ['031','Masse et centrage'],['032','Performances'],['033','Préparation et suivi du vol'],['040','Performances humaines'],
+ ['050','Météorologie'],['061','Navigation générale'],['062','Radionavigation'],['070','Procédures opérationnelles'],
+ ['081','Principes du vol'],['090','Communications']];
+const MOD=Object.fromEntries(LI.modules.map(m=>[m.id,m]));
+const BLK={};LI.modules.forEach(m=>m.blocks.forEach(b=>{b.mod=m;BLK[b.id]=b}));
+
+/* ================= Lecture des réponses dictées (FR) ================= */
+const W={'zéro':0,'zero':0,'un':1,'une':1,'deux':2,'trois':3,'quatre':4,'cinq':5,'six':6,'sept':7,'huit':8,'neuf':9,'dix':10,'onze':11,'douze':12,'treize':13,'quatorze':14,'quinze':15,'seize':16,'vingt':20,'vingts':20,'trente':30,'quarante':40,'cinquante':50,'soixante':60,'cent':100,'cents':100,'mille':1000};
+function wordsToNum(ws){
+ if(ws.length>=2&&ws.every(w=>W[w]<=9))return Number(ws.map(w=>W[w]).join(''));
+ let total=0,cur=0,last=null;
+ for(const w of ws){const n=W[w];
+  if(n===100)cur=(cur||1)*100;else if(n===1000){total+=(cur||1)*1000;cur=0}
+  else if(n===20&&last===4)cur+=76;else cur+=n;last=n}
+ return total+cur;
+}
+function parseSpoken(txt){
+ let s=' '+txt.toLowerCase().replace(/[’']/g,' ').replace(/([a-zà-ÿ])-(?=[a-zà-ÿ])/g,'$1 ').replace(/−/g,' moins ')+' ';
+ s=s.replace(/(\d)\s(?=\d{3}\b)/g,'$1').replace(/(\d),(\d)/g,'$1.$2');
+ const toks=s.split(/\s+/).filter(Boolean),out=[];let i=0;
+ while(i<toks.length){const t=toks[i];
+  if(/^[+-]?\d+(\.\d+)?$/.test(t)){let g=[t];while(/^\d$/.test(g[g.length-1])&&i+1<toks.length&&/^\d$/.test(toks[i+1]))g.push(toks[++i]);
+   out.push({n:Number(g.length>1?g.join(''):t)});i++;continue}
+  if(t in W){const ws=[];while(i<toks.length&&(toks[i] in W||(toks[i]==='et'&&toks[i+1] in W))){if(toks[i]!=='et')ws.push(toks[i]);i++}
+   out.push({n:wordsToNum(ws)});continue}
+  if(t==='moins'||t==='-')out.push({neg:true});else if(t==='virgule'||t==='point')out.push({dec:true});
+  i++}
+ for(let k=0;k<out.length;k++){if(out[k].n===undefined)continue;let v=out[k].n;const neg=k>0&&out[k-1].neg;
+  if(out[k+1]&&out[k+1].dec&&out[k+2]&&out[k+2].n!==undefined)v=Number(v+'.'+out[k+2].n);return neg?-v:v}
+ return NaN;
+}
+function parseLetter(txt){
+ const toks=txt.toLowerCase().replace(/c[’']est/g,' ').replace(/[’']/g,' ').replace(/[.,!?]/g,' ').split(/\s+/).filter(t=>t&&!['réponse','reponse','la','le','lettre','je','dis','choix'].includes(t));
+ const M={a:0,ah:0,'à':0,ha:0,un:0,'1':0,b:1,'bé':1,be:1,bee:1,bey:1,deux:1,'2':1,c:2,'cé':2,ce:2,ces:2,ses:2,sait:2,trois:2,'3':2,d:3,'dé':3,de:3,des:3,'dès':3,quatre:3,'4':3};
+ return toks.length&&toks[0] in M?M[toks[0]]:-1;
+}
+function command(t){t=t.toLowerCase();
+ if(/\b(je s[eè]che|passe|je ne sais pas|sais pas|aucune id[ée]e|joker)\b/.test(t))return'skip';
+ if(/\b(r[eé]p[eè]te|encore une fois|redis)\b/.test(t))return'repeat';
+ if(/\b(suivante?|continue)\b/.test(t))return'next';
+ if(/\b(stop|arr[eê]te|pause|termin[ée])\b/.test(t))return'stop';
+ return null}
+
+/* ================= Texte vers parole ================= */
+function sayify(h){
+ return h.replace(/<[^>]+>/g,'')
+  .replace(/FL0*(\d+)/g,'niveau $1').replace(/(\d{3})°\/(\d+) kt/g,'$1 degrés pour $2 nœuds')
+  .replace(/\b0(\d)(\d)\b/g,'zéro $1 $2')
+  .replace(/ft\/min/g,'pieds par minute').replace(/NM\/min/g,'nautiques par minute').replace(/(\d) ?ft\b/g,'$1 pieds').replace(/\bft\b/g,'pieds')
+  .replace(/(\d) ?NM\b/g,'$1 nautiques').replace(/\bNM\b/g,'nautiques').replace(/(\d) ?kt\b/g,'$1 nœuds').replace(/\bkt\b/g,'nœuds')
+  .replace(/hPa/g,'hectopascals').replace(/°\/s/g,' degrés par seconde').replace(/(\d) s(?=[\s.,)]|$)/g,'$1 secondes').replace(/°C/g,' degrés').replace(/°/g,' degrés')
+  .replace(/ΔISA/g,'écart ISA').replace(/\bVs\b/g,'vitesse sol').replace(/\bVP\b/g,'vitesse propre').replace(/\bOAT\b/g,'température extérieure').replace(/\bVz\b/g,'vé zède')
+  .replace(/÷/g,' divisé par ').replace(/×/g,' fois ').replace(/−/g,' moins ').replace(/ = /g,' égale ').replace(/\+(\d)/g,'plus $1').replace(/ \+ /g,' plus ')
+  .replace(/≈/g,'environ').replace(/%/g,' pour cent').replace(/\bmin\b/g,'minutes');
+}
+let frVoice=null;
+function pickVoice(){const v=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));
+ frVoice=v.find(x=>/fr-FR/i.test(x.lang)&&/google|amélie|thomas|audrey|marie/i.test(x.name))||v.find(x=>/fr-FR/i.test(x.lang))||v[0]||null}
+if('speechSynthesis' in window){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function speak(text,cb){
+ if(!('speechSynthesis' in window)){cb&&cb();return}
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(sayify(text));u.lang='fr-FR';if(frVoice)u.voice=frVoice;u.rate=1.05;
+ let fired=false;const done=()=>{if(fired)return;fired=true;cb&&cb()};u.onend=done;u.onerror=done;
+ speechSynthesis.speak(u);setTimeout(()=>{if(!speechSynthesis.speaking)done()},Math.max(4000,text.length*90));
+}
+
+/* ================= État ================= */
+const KEY='learning-ifr-v1';
+let S={tot:0,ok:0,streak:0,best:0,by:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)S=Object.assign(S,s)}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function acc(ids){let t=0,o=0;ids.forEach(id=>{const b=S.by[id];if(b){t+=b.t;o+=b.o}});return{t,o,p:t?Math.round(o/t*100):0}}
+const blockIds=m=>m.blocks.map(b=>b.id);
+const nItems=b=>(b.gens||[]).length+(b.bank||[]).length;
+
+/* ================= Vues ================= */
+let route='';
+function go(h){location.hash=h}
+function render(){
+ leavePractice();
+ const h=location.hash.replace(/^#\/?/,'');const [kind,arg]=h.split('/');
+ route=kind||'home';
+ $('back').hidden=route==='home';$('voice').hidden=route!=='p';
+ window.scrollTo(0,0);
+ if(kind==='m'&&MOD[arg])return viewModule(MOD[arg]);
+ if(kind==='f'&&BLK[arg])return viewMemo(BLK[arg]);
+ if(kind==='p')return viewPractice(arg||'all');
+ viewHome();
+}
+function scoreLine(){const p=S.tot?Math.round(S.ok/S.tot*100):0;
+ return `<div class="score"><span><b>${S.ok}</b>/${S.tot} · ${p} %</span><span>série <b>${S.streak}</b></span><span>record <b>${S.best}</b></span></div>`}
+function modRow(m,code,title){
+ if(!m)return `<div class="item off"><span class="code">${code}</span><div><div class="name">${esc(title)}</div></div><span class="tag">À venir</span></div>`;
+ const a=acc(blockIds(m));
+ return `<a class="item" href="#/m/${m.id}"><span class="code">${m.code}</span><div><div class="name">${esc(title||m.title)}</div>
+  <div class="meta">${m.blocks.length} bloc${m.blocks.length>1?'s':''}${a.t?' · '+a.p+' % de réussite':''}</div>${a.t?`<div class="bar"><i style="width:${a.p}%"></i></div>`:''}</div><span class="chev">›</span></a>`}
+function viewHome(){
+ $('brand').innerHTML='Learning <i>IFR</i>';
+ const prat=LI.modules.filter(m=>m.kind==='pratique');
+ const byCode=Object.fromEntries(LI.modules.filter(m=>m.kind==='atpl').map(m=>[m.code,m]));
+ $('view').innerHTML=`
+ <div><div class="eyebrow">Préparation théorique</div><h1>Programme IFR et ATPL</h1>
+  <p class="lead">Une fiche mémo par bloc, puis l'entraînement : calcul de tête ou QCM, au clavier ou à la voix.</p></div>
+ <div class="row">${scoreLine()}<button type="button" class="primary" id="mix">Révision mixte</button></div>
+ <section><h2>Pratique</h2><div style="height:10px"></div><div class="list">${prat.map(m=>modRow(m,m.code,m.title)).join('')}</div></section>
+ <section><h2>Théorie ATPL (EASA)</h2><div style="height:10px"></div><div class="list">${ATPL.map(([c,t])=>modRow(byCode[c],c,t)).join('')}</div></section>
+ <div class="foot"><p>Progression enregistrée sur cet appareil.</p><button type="button" class="ghost small" id="reset">Remettre à zéro</button></div>`;
+ $('mix').onclick=()=>go('/p/all');
+ let armed=false;$('reset').onclick=()=>{if(!armed){armed=true;$('reset').textContent='Confirmer la remise à zéro';setTimeout(()=>{armed=false;if($('reset'))$('reset').textContent='Remettre à zéro'},3000);return}
+  S={tot:0,ok:0,streak:0,best:0,by:{}};save();viewHome()};
+}
+function viewModule(m){
+ $('brand').textContent=m.code+' · '+m.title;
+ $('view').innerHTML=`
+ <div><div class="eyebrow">${m.kind==='atpl'?'ATPL '+m.code:'Pratique'}</div><h1>${esc(m.title)}</h1><p class="lead">${esc(m.intro||'')}</p></div>
+ <div class="row"><button type="button" class="primary" id="all">S'entraîner sur toute la matière</button></div>
+ <div class="list">${m.blocks.map(b=>{const a=acc([b.id]);return `<div class="block">
+   <div class="block-top"><div class="name">${esc(b.title)}</div><span class="meta">${a.t?a.o+'/'+a.t+' · '+a.p+' %':nItems(b)+(b.bank?' questions':' types')}</span></div>
+   ${a.t?`<div class="bar"><i style="width:${a.p}%"></i></div>`:''}
+   <div class="row"><a class="btn small" href="#/f/${b.id}">Fiche mémo</a><a class="btn small primary" href="#/p/b:${b.id}">S'entraîner</a></div></div>`}).join('')}</div>`;
+ $('all').onclick=()=>go('/p/m:'+m.id);
+}
+function viewMemo(b){
+ $('brand').textContent='Fiche · '+b.title;
+ $('view').innerHTML=`
+ <div><div class="eyebrow">${b.mod.kind==='atpl'?'ATPL '+b.mod.code+' · ':''}${esc(b.mod.title)}</div><h1>${esc(b.title)}</h1></div>
+ <article class="memo">${b.memo||'<p>Fiche à rédiger.</p>'}</article>
+ <div class="row"><button type="button" class="primary" id="train">S'entraîner sur ce bloc</button><a class="btn ghost" href="#/m/${b.mod.id}">Tous les blocs de la matière</a></div>`;
+ $('train').onclick=()=>go('/p/b:'+b.id);
+}
+
+/* ================= Entraînement ================= */
+let pool=[],recent=[],cur=null,t0=0,tick=null,done=false,voice=false,phase='idle',lastSpoken='',autoT=null,scopeLbl='';
+function buildPool(scope){
+ let blocks=[];
+ if(scope.startsWith('b:'))blocks=[BLK[scope.slice(2)]].filter(Boolean);
+ else if(scope.startsWith('m:'))blocks=(MOD[scope.slice(2)]||{blocks:[]}).blocks;
+ else blocks=LI.modules.flatMap(m=>m.blocks);
+ scopeLbl=scope.startsWith('b:')&&blocks[0]?blocks[0].title:scope.startsWith('m:')&&MOD[scope.slice(2)]?MOD[scope.slice(2)].title:'Révision mixte';
+ return blocks.map(b=>({b,items:[...(b.gens||[]).map((g,i)=>({k:'g'+i,g})),...(b.bank||[]).map((q,i)=>({k:'q'+i,q}))]})).filter(x=>x.items.length);
+}
+function viewPractice(scope){
+ pool=buildPool(scope);recent=[];
+ if(!pool.length){$('view').innerHTML='<p>Rien à réviser ici pour l\'instant.</p>';return}
+ $('brand').textContent=scopeLbl;
+ $('view').innerHTML=`
+ ${scoreLine()}
+ <p class="note" id="voiceNote" hidden></p>
+ <article class="card">
+  <div class="card-head"><div><div class="cat" id="cat"></div><div class="ttl" id="ttl"></div></div>
+   <div class="head-r"><a class="btn small ghost" id="memoLink" href="#">Fiche</a><span class="timer" id="timer">0 s</span></div></div>
+  <div class="readouts" id="ro"></div>
+  <p class="q" id="q"></p>
+  <div class="listen" id="listen" ${voice?'':'hidden'}><span class="dot"></span><span class="heard" id="heard">—</span><button type="button" class="small mic" id="mic">Réécouter</button></div>
+  <form class="answer" id="form" autocomplete="off">
+   <label class="field" for="ans"><input id="ans" type="text" inputmode="decimal" placeholder="?" aria-label="Ta réponse"><span class="unit" id="unit"></span></label>
+   <button type="button" class="pm" id="pm" hidden aria-label="Changer le signe">±</button>
+   <button type="submit" class="primary" id="goBtn">Valider</button>
+  </form>
+  <div class="choices" id="choices" hidden></div>
+  <div class="row"><button type="button" class="ghost" id="skip">Je sèche</button></div>
+  <div id="fb"></div>
+  <div class="next-row" id="nextRow" hidden><button type="button" class="primary" id="next">Question suivante</button></div>
+ </article>`;
+ $('form').addEventListener('submit',e=>{e.preventDefault();judge({skipped:false})});
+ $('skip').onclick=()=>judge({skipped:true});
+ $('next').onclick=nextQ;
+ $('mic').onclick=()=>{retries=0;listen()};
+ $('pm').onclick=()=>{const i=$('ans');i.value=i.value.startsWith('-')?i.value.slice(1):'-'+i.value;i.focus()};
+ nextQ();
+}
+function pickItem(){
+ for(let n=0;n<20;n++){const x=P(pool),it=P(x.items),key=x.b.id+it.k;
+  if(!recent.includes(key)||n===19){recent.push(key);if(recent.length>Math.min(4,pool.reduce((s,p)=>s+p.items.length,0)-1))recent.shift();return{b:x.b,it}}}
+}
+function makeQ({b,it}){
+ if(it.g)return Object.assign(it.g(),{type:'num',b});
+ const q=it.q,order=[0,1,2,3].slice(0,q.c.length).sort(()=>Math.random()-.5);
+ return{type:'qcm',b,t:b.title,q:q.q,choices:order.map(i=>q.c[i]),good:order.indexOf(0),why:q.why,ro:[]};
+}
+const L='ABCD';
+function nextQ(){
+ clearTimeout(autoT);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();
+ cur=makeQ(pickItem());done=false;phase='ask';
+ $('cat').textContent=(cur.b.mod.kind==='atpl'?cur.b.mod.code+' · '+cur.b.mod.title:cur.b.title);$('ttl').textContent=cur.t;
+ $('memoLink').href='#/f/'+cur.b.id;
+ $('ro').innerHTML=(cur.ro||[]).map(([l,v])=>`<div class="ro"><span>${l}</span><b>${v}</b></div>`).join('');$('ro').hidden=!(cur.ro||[]).length;
+ $('q').textContent=cur.q;$('fb').innerHTML='';$('nextRow').hidden=true;$('skip').disabled=false;$('heard').textContent='—';
+ if(cur.type==='num'){
+  $('form').hidden=false;$('choices').hidden=true;$('unit').textContent=cur.u;$('pm').hidden=!cur.neg;
+  $('ans').value='';$('ans').disabled=false;$('goBtn').disabled=false;
+ }else{
+  $('form').hidden=true;$('choices').hidden=false;
+  $('choices').innerHTML=cur.choices.map((c,i)=>`<button type="button" class="choice" data-i="${i}"><span class="k">${L[i]}</span><span>${esc(c)}</span></button>`).join('');
+  $('choices').querySelectorAll('.choice').forEach(btn=>btn.onclick=()=>judge({pick:+btn.dataset.i}));
+ }
+ if(voice)ask();else{startTimer();if(cur.type==='num')$('ans').focus({preventScroll:true})}
+}
+function startTimer(){t0=Date.now();clearInterval(tick);$('timer').textContent='0 s';tick=setInterval(()=>{if($('timer'))$('timer').textContent=Math.floor((Date.now()-t0)/1000)+' s'},500)}
+function questionSpeech(){return cur.type==='qcm'?cur.q+' '+cur.choices.map((c,i)=>`Réponse ${L[i]} : ${c}.`).join(' '):cur.q}
+function ask(){phase='ask';retries=0;$('heard').textContent='…';speak(questionSpeech(),()=>{if(phase==='ask'&&!done){startTimer();listen()}})}
+function parseNum(v){v=v.replace(/\s/g,'').replace(',','.').replace('−','-');return v===''?NaN:Number(v)}
+function judge({skipped,pick}){
+ if(done)return;
+ let good=false,yours='';
+ if(cur.type==='num'&&!skipped){const v=parseNum($('ans').value);if(isNaN(v)){$('ans').focus();return}good=cur.ok(v,cur.a);yours=$('ans').value}
+ if(cur.type==='qcm'&&pick!==undefined){good=pick===cur.good;yours=L[pick]}
+ done=true;phase='verdict';stopListen();clearInterval(tick);const sec=Math.round((Date.now()-t0)/1000);
+ S.tot++;const st=S.by[cur.b.id]||(S.by[cur.b.id]={t:0,o:0});st.t++;
+ if(good){S.ok++;st.o++;S.streak++;S.best=Math.max(S.best,S.streak)}else S.streak=0;save();
+ document.querySelector('.score').outerHTML=scoreLine();
+ $('skip').disabled=true;$('nextRow').hidden=false;
+ let ansTxt,body,speech;
+ if(cur.type==='num'){
+  $('ans').disabled=true;$('goBtn').disabled=true;
+  ansTxt=(cur.hdg?H(cur.a):(cur.neg?sgn(cur.a):fmt(cur.a)))+(cur.hdg?'':' '+cur.u);
+  body=`<ol class="steps">${cur.s.map(x=>`<li>${x}</li>`).join('')}</ol><p class="tip">${cur.tip}</p>`;
+  const say=cur.hdg?'cap '+H(cur.a):ansTxt;
+  speech=good?`Juste. ${say}.`:`${skipped?'Pas de souci.':'Non.'} La réponse est ${say}. ${cur.s.join('. ')}.`;
+ }else{
+  $('choices').querySelectorAll('.choice').forEach((btn,i)=>{btn.disabled=true;if(i===cur.good)btn.classList.add('good');else if(i===pick)btn.classList.add('bad')});
+  ansTxt=L[cur.good]+'</b>. '+esc(cur.choices[cur.good])+'<b>';
+  body=`<p class="tip" style="color:inherit">${esc(cur.why)}</p>`;
+  speech=good?`Juste. ${cur.why}`:`${skipped?'Pas de souci.':'Non.'} La bonne réponse est ${L[cur.good]} : ${cur.choices[cur.good]}. ${cur.why}`;
+ }
+ $('fb').innerHTML=good
+  ?`<div class="fb ok"><div class="verdict">Juste, en ${sec} s. ${cur.type==='num'?'Attendu : ':''}<b>${ansTxt}</b></div><details><summary>Revoir l'explication</summary>${body}</details></div>`
+  :`<div class="fb err"><div class="verdict">${skipped?'Pas de réponse.':'Ta réponse : <b>'+esc(yours)+'</b>.'} Attendu : <b>${ansTxt}</b></div>${body}</div>`;
+ if(voice){lastSpoken=speech;speak(speech,afterVerdict)}else $('next').focus({preventScroll:true});
+}
+function afterVerdict(){if(!voice||phase!=='verdict')return;autoT=setTimeout(()=>{if(voice&&phase==='verdict')nextQ()},1500)}
+
+/* ================= Reconnaissance vocale ================= */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,retries=0;
+function listen(){
+ if(!SR||!voice||!$('listen'))return;stopListen();
+ rec=new SR();rec.lang='fr-FR';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=3;let got=false;
+ rec.onstart=()=>{$('listen').classList.add('on');$('heard').textContent="À l'écoute…"};
+ rec.onresult=e=>{const r=e.results[e.results.length-1];$('heard').textContent=r[0].transcript;if(r.isFinal){got=true;handleSpeech([...r].map(a=>a.transcript))}};
+ rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')note("Micro refusé. Autorise le micro pour cette app dans les réglages, ou réponds au clavier.")};
+ rec.onend=()=>{if($('listen'))$('listen').classList.remove('on');
+  if(!got&&voice&&phase!=='idle'){if(retries++<4)setTimeout(listen,250);else if($('heard'))$('heard').textContent='Rien entendu. Touche « Réécouter ».'}};
+ try{rec.start()}catch(e){}
+}
+function stopListen(){if(rec){rec.onend=null;try{rec.abort()}catch(e){}rec=null}if($('listen'))$('listen').classList.remove('on')}
+function handleSpeech(alts){
+ const c=command(alts[0]);
+ if(c==='stop'){setVoice(false);return}
+ if(c==='repeat'){if(phase==='ask')ask();else speak(lastSpoken,afterVerdict);return}
+ if(phase==='ask'){
+  if(c==='skip'){judge({skipped:true});return}
+  if(cur.type==='num'){let v=NaN;for(const a of alts){v=parseSpoken(a);if(!isNaN(v))break}
+   if(isNaN(v)){retries=0;speak("Je n'ai pas compris. Redis ta réponse.",listen);return}
+   $('ans').value=String(v).replace('.',',');judge({skipped:false});return}
+  let k=-1;for(const a of alts){k=parseLetter(a);if(k>=0&&k<cur.choices.length)break}
+  if(k<0||k>=cur.choices.length){retries=0;speak("Je n'ai pas compris. Dis A, B, C ou D.",listen);return}
+  judge({pick:k});return}
+ if(phase==='verdict'){if(c==='next'||c==='skip')nextQ();else listen()}
+}
+function note(t){const n=$('voiceNote');if(n){n.textContent=t;n.hidden=!t}}
+function setVoice(on){
+ voice=on;$('voice').setAttribute('aria-pressed',on);$('voiceLbl').textContent=on?'Voix activée':'Voix';
+ if($('listen'))$('listen').hidden=!on;
+ if(on){
+  if(!('speechSynthesis' in window))note('Ce navigateur ne sait pas lire à voix haute.');
+  else if(!SR)note("La dictée n'est pas disponible ici : je lis les questions, tu réponds au clavier ou en touchant une réponse.");
+  else note('');
+  if(route!=='p')return;
+  if(phase==='verdict')nextQ();else{clearInterval(tick);ask()}
+ }else{clearTimeout(autoT);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();note('');if(route==='p'&&phase==='ask'&&!done)startTimer()}
+}
+function leavePractice(){clearTimeout(autoT);clearInterval(tick);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();phase='idle'}
+
+/* ================= Navigation, clavier, installation ================= */
+$('back').onclick=()=>{if(history.length>1)history.back();else go('/')};
+$('voice').onclick=()=>setVoice(!voice);
+document.addEventListener('keydown',e=>{if(route!=='p'||!cur)return;
+ if(e.key==='Enter'&&done&&document.activeElement!==$('next')){e.preventDefault();nextQ();return}
+ if(!done&&cur.type==='qcm'){const i='abcd'.indexOf(e.key.toLowerCase());if(i>=0&&i<cur.choices.length)judge({pick:i})}});
+window.addEventListener('hashchange',render);
+let deferred=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('install').style.display='inline-block'});
+$('install').onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;$('install').style.display='none'};
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+render();
+</script>
+</body>
+</html>
