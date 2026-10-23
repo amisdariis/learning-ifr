@@ -209,6 +209,9 @@ const SOL={...base,title:'Mise en route et roulage DR400',intro:`${AD.station.sp
  phases:['avmr','mer','clr','taxi','pf','avd','align','roll'].map(k=>W[k])};
 const TDP={...base,title:'Tour de piste complet DR400',intro:`LFCL, piste ${AD.rwy} : du ${AD.parking} au ${AD.parking}. Mise en route, roulage, tour de piste à ${AD.tdp} ft sol et arrêt moteur.`,
  phases:['avmr','mer','clr','taxi','pf','avd','align','roll','rot','p300','p500','xw','lvl','dw','abeam','base','final','short','flare','roll2','park'].map(k=>W[k])};
+const VOL={...base,title:'Décollage et tour de piste DR400',intro:`Aligné piste ${AD.rwy}, autorisé au décollage : du plein gaz jusqu'à l'arrondi.`,
+ phases:['align','roll','rot','p300','p500','xw','lvl','dw','abeam','base','final','short','flare'].map(k=>W[k]),
+ init:{vars:{pos:3,hdg:330},ctl:{...ON,brake:'serré',flaps:1,pump:true,lights:true,xpdr:'ALT',throttle:'reduit'}}};
 const RDG={...base,title:'Remise de gaz DR400',intro:'Départ en vent arrière, approche normale, puis remise de gaz à 300 ft en finale.',phases:GA,
  init:{vars:{agl:1000,ias:170,vs:0,hdg:150,pos:9.5},ctl:{...ON,throttle:'palier',lights:true,xpdr:'ALT'}}};
 
@@ -223,5 +226,5 @@ const head=`<p>Valeurs indicatives pour un DR400-120 à Toulouse-Lasbordes. Ta c
 const blk=(id,title,sc)=>({id,title,sim:{panel:'dr400',scenario:sc},get memo(){return SIM.memo(sc,head)}});
 LI.register({id:'tdp',code:'TDP',kind:'pratique',title:'Tour de piste',
  intro:'Planche de bord animée à LFCL : touche ou dicte les commandes au bon moment pour ancrer les automatismes.',
- blocks:[blk('tdp-dr400','DR400 · du parking au parking',TDP),blk('tdp-dr400-sol','DR400 · mise en route et roulage',SOL),blk('tdp-dr400-rdg','DR400 · remise de gaz',RDG)]});
+ blocks:[blk('tdp-dr400','DR400 · du parking au parking',TDP),blk('tdp-dr400-vol','DR400 · de l\'alignement à l\'atterrissage',VOL),blk('tdp-dr400-sol','DR400 · mise en route et roulage',SOL),blk('tdp-dr400-rdg','DR400 · remise de gaz',RDG)]});
 })();

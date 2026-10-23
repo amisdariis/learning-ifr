@@ -175,6 +175,12 @@ body.sim-fs{overflow:hidden}
 .fs-card li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:4px}
 .fs-card li.todo{color:#F7A8D3}
 .fs-card.min ul,.fs-card.min .fs-cue{display:none}
+.fs-mic{display:flex;gap:6px;align-items:center;background:#07131B;border:1px solid #3A434C;border-radius:8px;padding:4px 6px;color:#AFC0CC;font-size:11.5px;min-width:0;margin-top:auto}
+.fs-mic[hidden]{display:none!important}
+.fs-mic button{flex:none;width:32px;height:32px;padding:0;border-radius:50%;background:#262C32;border:1px solid #3A434C;font-size:15px}
+.fs-mic.on button{background:#F064B2;border-color:#F064B2}
+.fs-mic span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fs-mic+.fs-toast{margin-top:0}
 .fs-toast{margin-top:auto;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;border:1px solid transparent}
 .fs-toast.show{opacity:1}
 .fs-toast.ok{background:#14301F;color:#7BE3A8;border-color:#2F7A4F}
@@ -358,8 +364,8 @@ SIM.view=function(block){
    <p class="note" id="mDesc"></p></div>
   <div class="opt"><span class="lbl">Cadence</span><div class="seg" id="mSpeed"><button type="button" data-v="0.7">Lente</button><button type="button" data-v="1">Normale</button><button type="button" data-v="1.4">Rapide</button></div></div>
   <div class="opt"><span class="lbl">Son : consignes et radio</span><div class="seg" id="mSound"><button type="button" data-v="on">Activé</button><button type="button" data-v="off">Coupé</button></div></div>
-  <div class="opt"><span class="lbl">Commandes vocales</span><div class="seg" id="mMic"><button type="button" data-v="on">Activées</button><button type="button" data-v="off">Désactivées</button></div>
-   <p class="note">${SRC?"Dis l'action : « plein gaz », « volets un cran », « pompe », « réchauffage », « compenser »… Pour la radio, dis ton message ou « radio ».":"La dictée n'est pas disponible dans ce navigateur (Chrome sur Android ou Safari sur iPhone la gèrent)."}</p></div>
+  <div class="opt"><span class="lbl">Réponses</span><div class="seg" id="mMic"><button type="button" data-v="off">Toucher la planche</button><button type="button" data-v="on">Dicter à la voix</button></div>
+   <p class="note">${SRC?"En dictée, l'app écoute en continu : dis l'action (« plein gaz », « volets un cran », « pompe ON », « réchauffage chaud », « compenser »). Pour la radio, dis ton message ou « radio ». Toucher la planche reste possible.":"La dictée n'est pas disponible dans ce navigateur (Chrome sur Android ou Safari sur iPhone la gèrent)."}</p></div>
   <div class="opt"><label class="lbl" for="mCs">Indicatif</label><input class="cs" id="mCs" maxlength="6" value="${esc(MODE.cs)}" autocomplete="off"></div>
   <p class="note">${sc.phases.length} phases, ${nAct} actions. Touche la commande ou l'instrument concerné : un appui suffit, la précision du geste ne compte pas.</p>
   <div class="row"><button type="button" class="primary" id="go">Démarrer le tour de piste</button><button type="button" class="ghost" id="avBtn">Vérifier son et micro</button><a class="btn ghost" href="#/f/${block.id}">Fiche mémo</a></div>`;
@@ -392,10 +398,11 @@ function start(block,panel,sc){
   <div class="sim-bar"><div class="sim-count"><span>Phase <b id="cPh">1</b>/${sc.phases.length}</span><span>✓ <b id="cOk">0</b></span><span>manquées <b id="cMiss">0</b></span><span>erreurs <b id="cBad">0</b></span></div>
    <div class="row"><button type="button" class="small" id="sPause">Pause</button><button type="button" class="small" id="sFull">Plein écran</button><button type="button" class="small ghost" id="sQuit">Arrêter</button></div></div>
   <div class="sim-strip"><div class="sim-cue" id="cue"></div><div class="sim-toast" id="toast"></div></div>
-  <div class="sim-mic" id="mic" ${MODE.mic==='on'&&SRC?'':'hidden'}><span class="dot"></span><span>Commandes vocales</span><span id="heard"></span></div>
+  <div class="sim-mic" id="mic" ${MODE.mic==='on'&&SRC?'':'hidden'}><span class="dot"></span><span id="micSt">Micro en attente</span><span id="heard"></span><button type="button" class="small ghost" id="micB">Relancer l'écoute</button></div>
   <div class="sim-stage" id="stage">${svg}<div class="sim-paused" id="pz" hidden>PAUSE</div>
    <div class="fs-side" id="fsSide"><div class="fs-ctl"><button type="button" id="fsPause" aria-label="Pause">❚❚</button><button type="button" id="fsExit" aria-label="Quitter le plein écran">✕</button></div>
     <div class="fs-card" id="fsCard" ${MODE.mode==='guide'?'':'hidden'}></div>
+    <div class="fs-mic" id="fsMic" ${MODE.mic==='on'&&SRC?'':'hidden'}><button type="button" id="fsMicB" aria-label="Relancer l'écoute">🎙</button><span id="fsHeard">Micro en attente</span></div>
     <div class="fs-toast" id="fsToast"></div></div></div>
   <p class="sim-rot">Tourne le téléphone en paysage pour agrandir la planche.</p></div>`;
  const q=id=>document.getElementById(id);
@@ -453,15 +460,19 @@ function start(block,panel,sc){
  }
  /* dictée continue */
  function micStart(){if(!SRC||MODE.mic!=='on'||!R.alive||R.rec)return;const rec=new SRC();R.rec=rec;rec.lang='fr-FR';rec.continuous=true;rec.interimResults=false;rec.maxAlternatives=1;
-  rec.onstart=()=>q('mic')&&q('mic').classList.add('on');
-  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const t=e.results[i][0].transcript.trim();if(!t||speakingNow())continue;
-   if(q('heard'))q('heard').textContent='« '+t+' »';
+  rec.onstart=()=>micUI(true);
+  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const t=e.results[i][0].transcript.trim();if(!t)continue;if(speakingNow()){heard('(ignoré pendant l\'annonce)');continue}
+   heard('« '+t+' »');
    if(R.paused){if(/reprendre|reprise|continue/i.test(t))q('sPause').click();continue}
    if(/^\s*(pause|stop)\s*$/i.test(t)){q('sPause').click();continue}
    const zs=parseVoice(t);if(!zs.length){show('bad','Pas compris : « '+esc(t)+' »');continue}zs.forEach(o=>tap(o.z,'voice',o.q))}};
   rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){MODE.mic='off';saveAV({mic:null});q('mic')&&(q('mic').hidden=true);if(!R.paused)q('sPause').click();avDialog(null,'Le micro est bloqué : les commandes vocales sont coupées. Autorise-le, puis relance le tour de piste.')}};
-  rec.onend=()=>{R.rec=null;q('mic')&&q('mic').classList.remove('on');if(R.alive&&MODE.mic==='on')setTimeout(micStart,250)};
+  rec.onend=()=>{R.rec=null;micUI(false);if(R.alive&&MODE.mic==='on')setTimeout(micStart,250)};
   try{rec.start()}catch(e){R.rec=null}}
+ function micUI(on){const m=q('mic'),f=q('fsMic');m&&m.classList.toggle('on',on);f&&f.classList.toggle('on',on);if(q('micSt'))q('micSt').textContent=on?'À l\'écoute':'Micro en attente';if(!on&&q('fsHeard')&&!q('fsHeard').dataset.t)q('fsHeard').textContent='Micro en attente'}
+ function heard(t){if(q('heard'))q('heard').textContent=t;const f=q('fsHeard');if(f){f.textContent=t;f.dataset.t='1'}}
+ const relisten=()=>{micStop();micStart()};
+ q('micB').onclick=relisten;q('fsMicB').onclick=relisten;
  function micStop(){if(R.rec){const r=R.rec;R.rec=null;r.onend=null;try{r.abort()}catch(e){}}}
  R.micStop=micStop;
  q('stage').addEventListener('pointerdown',ev=>{const g=ev.target.closest('.zone');if(g){ev.preventDefault();tap(g.dataset.z)}});
