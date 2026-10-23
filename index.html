@@ -292,7 +292,8 @@ function viewHome(){
  <div class="row">${scoreLine()}<button type="button" class="primary" id="mix">Révision mixte</button></div>
  <section><h2>Pratique</h2><div style="height:10px"></div><div class="list">${prat.map(m=>modRow(m,m.code,m.title)).join('')}</div></section>
  <section><h2>Théorie ATPL (EASA)</h2><div style="height:10px"></div><div class="list">${ATPL.map(([c,t])=>modRow(byCode[c],c,t)).join('')}</div></section>
- <div class="foot"><p>Progression enregistrée sur cet appareil.</p><button type="button" class="ghost small" id="reset">Remettre à zéro</button></div>`;
+ <div class="foot"><p>Progression enregistrée sur cet appareil.</p><div class="row"><button type="button" class="ghost small" id="av">Son et micro</button><button type="button" class="ghost small" id="reset">Remettre à zéro</button></div></div>`;
+ $('av').onclick=()=>LI.sim.avDialog(null);
  $('mix').onclick=()=>go('/p/all');
  let armed=false;$('reset').onclick=()=>{if(!armed){armed=true;$('reset').textContent='Confirmer la remise à zéro';setTimeout(()=>{armed=false;if($('reset'))$('reset').textContent='Remettre à zéro'},3000);return}
   S={tot:0,ok:0,streak:0,best:0,by:{}};save();viewHome()};
@@ -426,7 +427,7 @@ function listen(){
  rec=new SR();rec.lang='fr-FR';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=3;let got=false;
  rec.onstart=()=>{$('listen').classList.add('on');$('heard').textContent="À l'écoute…"};
  rec.onresult=e=>{const r=e.results[e.results.length-1];$('heard').textContent=r[0].transcript;if(r.isFinal){got=true;handleSpeech([...r].map(a=>a.transcript))}};
- rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')note("Micro refusé. Autorise le micro pour cette app dans les réglages, ou réponds au clavier.")};
+ rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){note("Micro refusé. Autorise-le dans les réglages, ou réponds au clavier.");LI.sim.avDialog(null,'Le micro est bloqué pour cette app.')}};
  rec.onend=()=>{if($('listen'))$('listen').classList.remove('on');
   if(!got&&voice&&phase!=='idle'){if(retries++<4)setTimeout(listen,250);else if($('heard'))$('heard').textContent='Rien entendu. Touche « Réécouter ».'}};
  try{rec.start()}catch(e){}

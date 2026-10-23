@@ -186,6 +186,17 @@ const css=`
 .debrief li.ok .s{color:var(--ok)} .debrief li.miss .s{color:var(--err)}
 .debrief li .why{grid-column:2;color:var(--muted);font-size:13px}
 .big{font-family:var(--f-display);font-weight:700;font-size:3rem;line-height:1}
+.av-wrap{position:fixed;inset:0;z-index:50;background:rgba(7,19,27,.6);display:flex;align-items:flex-end;justify-content:center;padding:max(12px,env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) max(12px,env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+@media (min-width:640px){.av-wrap{align-items:center}}
+.av{background:var(--surface);color:var(--ink);border-radius:14px;border-top:3px solid var(--accent);width:min(560px,100%);max-height:100%;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.av h2{margin:0}
+.av-s{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.av-h{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.av-st{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);text-align:right}
+.av-st.ok{color:var(--ok)} .av-st.bad{color:var(--err)}
+.av-steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.av-alert{margin:0;background:var(--err-soft);color:var(--err);border-radius:8px;padding:8px 12px;font-weight:600;font-size:14px}
+.av-end{justify-content:space-between}
 .sim-mic{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;min-width:0}
 .sim-mic .dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
 .sim-mic.on .dot{background:#F064B2}
@@ -214,6 +225,67 @@ function sayNext(){const it=TTS.q.shift();if(!it){TTS.busy=false;TTS.until=perfo
  try{speechSynthesis.speak(u)}catch(e){fin()}setTimeout(fin,2500+it.text.length*95)}
 function hush(){TTS.q=[];TTS.busy=false;try{speechSynthesis.cancel()}catch(e){}}
 const speakingNow=()=>TTS.busy||performance.now()<TTS.until;
+
+/* ---------- fenêtre : son et micro ---------- */
+const UA=navigator.userAgent||'';
+const OS=/iPhone|iPad|iPod/.test(UA)||(/Macintosh/.test(UA)&&navigator.maxTouchPoints>1)?'ios':/Android/.test(UA)?'android':'desktop';
+const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+const AVKEY='learning-ifr-av';
+const HELP={
+ ios:{
+  sound:['Désactive le mode silencieux : bouton sur le côté de l\'iPhone (orange = silencieux).','Monte le volume pendant que l\'app parle.','Si toujours rien : Réglages › Accessibilité › Contenu énoncé › Voix › Français, puis télécharge une voix (Thomas ou Amélie).'],
+  mic:['Dans Safari : touche « aA » dans la barre d\'adresse › Réglages du site web › Microphone › Autoriser.','Réglages › Applications › Safari › Microphone : « Demander » ou « Autoriser ».','Réglages › Confidentialité et sécurité › Reconnaissance vocale : active Safari.','Réglages › Confidentialité et sécurité › Microphone : active Safari s\'il apparaît.'],
+  note:STANDALONE?'L\'app installée sur l\'écran d\'accueil utilise les réglages de Safari. Si la dictée reste muette, ouvre la même adresse dans Safari.':''},
+ android:{
+  sound:['Monte le volume « Multimédia » (pas celui de la sonnerie) pendant que l\'app parle.','Réglages › Système › Langues et saisie › Synthèse vocale : moteur Google, langue Français.','Dans ce même menu, installe les données vocales françaises si elles manquent.'],
+  mic:['Touche le cadenas (ou ⓘ) à gauche de l\'adresse › Autorisations › Micro › Autoriser.','Ou : Chrome › ⋮ › Paramètres › Paramètres des sites › Micro : retire le blocage pour ce site.','Réglages Android › Applications › Chrome › Autorisations › Micro › Autoriser.'],
+  note:STANDALONE?'L\'app installée utilise les autorisations de Chrome : appui long sur son icône › Infos sur l\'appli › Autorisations, ou les paramètres des sites de Chrome.':''},
+ desktop:{
+  sound:['Vérifie le volume et la sortie audio de l\'ordinateur.','Une voix française doit être installée dans le système.'],
+  mic:['Clique sur le cadenas à gauche de l\'adresse › Microphone › Autoriser, puis recharge la page.','Vérifie aussi l\'accès au micro du navigateur dans les réglages de confidentialité du système.'],note:''}};
+let avBox=null;
+function avDialog(onDone,reason){
+ addStyle();if(avBox)avBox.remove();const H=HELP[OS];
+ const box=document.createElement('div');box.className='av-wrap';avBox=box;
+ box.innerHTML=`<div class="av" role="dialog" aria-modal="true" aria-labelledby="avT">
+  <h2 id="avT">Son et micro</h2>
+  ${reason?`<p class="av-alert">${esc(reason)}</p>`:''}
+  <p class="note">Une page web ne peut pas ouvrir les réglages du téléphone à ta place. Teste ici, et si ça bloque, suis le chemin indiqué.</p>
+  <section class="av-s"><div class="av-h"><b>1. Voix de l'app</b><span class="av-st" id="avSnd">non testé</span></div>
+   <div class="row"><button type="button" class="small" id="avPlay">Tester le son</button><button type="button" class="small" id="avYes" hidden>J'entends</button><button type="button" class="small" id="avNo" hidden>Rien entendu</button></div>
+   <ol class="av-steps" id="avSndHelp" hidden>${H.sound.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></section>
+  <section class="av-s"><div class="av-h"><b>2. Micro (commandes vocales)</b><span class="av-st" id="avMic">${SRC?'non testé':'indisponible'}</span></div>
+   ${SRC?`<div class="row"><button type="button" class="small" id="avAsk">Autoriser le micro</button></div>`:`<p class="note">Ce navigateur ne fait pas la dictée. Utilise Chrome sur Android ou Safari sur iPhone, ou réponds en touchant la planche.</p>`}
+   <ol class="av-steps" id="avMicHelp" hidden>${H.mic.map(x=>`<li>${esc(x)}</li>`).join('')}</ol>
+   ${H.note?`<p class="note" id="avNote" hidden>${esc(H.note)}</p>`:''}</section>
+  <div class="row av-end"><button type="button" class="primary" id="avGo">${onDone?'Continuer':'Fermer'}</button><button type="button" class="ghost small" id="avAll">Voir tous les réglages</button></div></div>`;
+ document.body.appendChild(box);
+ const $$=id=>box.querySelector('#'+id),set=(id,t,c)=>{const e=$$(id);e.textContent=t;e.className='av-st '+(c||'')};
+ const fr=()=>('speechSynthesis' in window)?speechSynthesis.getVoices().some(v=>/^fr/i.test(v.lang)):false;
+ $$('avPlay').onclick=()=>{
+  if(!('speechSynthesis' in window)){set('avSnd','synthèse vocale absente','bad');$$('avSndHelp').hidden=false;return}
+  try{speechSynthesis.cancel();pickVoices();const u=new SpeechSynthesisUtterance('Lasbordes Tour, test radio, un, deux, trois.');u.lang='fr-FR';if(TTS.pilot)u.voice=TTS.pilot;u.volume=1;speechSynthesis.speak(u)}catch(e){}
+  set('avSnd',fr()?'lecture en cours…':'aucune voix française détectée',fr()?'':'bad');$$('avYes').hidden=false;$$('avNo').hidden=false};
+ $$('avYes').onclick=()=>{set('avSnd','OK','ok');$$('avSndHelp').hidden=true;MODE.sound='on';saveAV({sound:'ok'})};
+ $$('avNo').onclick=()=>{set('avSnd','à régler','bad');$$('avSndHelp').hidden=false};
+ const micBad=()=>{set('avMic','bloqué','bad');$$('avMicHelp').hidden=false;$$('avNote')&&($$('avNote').hidden=false)};
+ if(SRC){
+  $$('avAsk').onclick=async()=>{
+   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){micBad();return}
+   set('avMic','demande en cours…');
+   try{const s=await navigator.mediaDevices.getUserMedia({audio:true});s.getTracks().forEach(t=>t.stop());set('avMic','autorisé','ok');$$('avMicHelp').hidden=true;MODE.mic='on';saveAV({mic:'ok'})}
+   catch(e){micBad()}};
+  if(navigator.permissions&&navigator.permissions.query)navigator.permissions.query({name:'microphone'}).then(p=>{if(p.state==='granted')set('avMic','autorisé','ok');if(p.state==='denied')micBad()}).catch(()=>{});
+ }
+ $$('avAll').onclick=()=>{$$('avSndHelp').hidden=false;$$('avMicHelp')&&($$('avMicHelp').hidden=false);$$('avNote')&&($$('avNote').hidden=false)};
+ const close=()=>{box.remove();avBox=null;try{localStorage.setItem('learning-ifr-sim',JSON.stringify(MODE))}catch(e){}};
+ $$('avGo').onclick=()=>{close();onDone&&onDone()};
+ box.addEventListener('pointerdown',e=>{if(e.target===box&&!onDone)close()});
+ $$('avPlay').focus();
+}
+function saveAV(o){try{const v=JSON.parse(localStorage.getItem(AVKEY)||'{}');localStorage.setItem(AVKEY,JSON.stringify(Object.assign(v,o)))}catch(e){}}
+function avChecked(){try{const v=JSON.parse(localStorage.getItem(AVKEY)||'{}');return(MODE.sound!=='on'||v.sound)&&(MODE.mic!=='on'||!SRC||v.mic)}catch(e){return true}}
+SIM.avDialog=avDialog;
 
 /* ---------- dictée des commandes ---------- */
 const VOC=[ // ordre = priorité ; le texte reconnu est masqué au fur et à mesure
@@ -267,14 +339,16 @@ SIM.view=function(block){
    <p class="note">${SRC?"Dis l'action : « plein gaz », « volets un cran », « pompe », « réchauffage », « compenser »… Pour la radio, dis ton message ou « radio ».":"La dictée n'est pas disponible dans ce navigateur (Chrome sur Android ou Safari sur iPhone la gèrent)."}</p></div>
   <div class="opt"><label class="lbl" for="mCs">Indicatif</label><input class="cs" id="mCs" maxlength="6" value="${esc(MODE.cs)}" autocomplete="off"></div>
   <p class="note">${sc.phases.length} phases, ${nAct} actions. Touche la commande ou l'instrument concerné : un appui suffit, la précision du geste ne compte pas.</p>
-  <div class="row"><button type="button" class="primary" id="go">Démarrer le tour de piste</button><a class="btn ghost" href="#/f/${block.id}">Fiche mémo</a></div>`;
+  <div class="row"><button type="button" class="primary" id="go">Démarrer le tour de piste</button><button type="button" class="ghost" id="avBtn">Vérifier son et micro</button><a class="btn ghost" href="#/f/${block.id}">Fiche mémo</a></div>`;
  const desc={guide:"La phase et la consigne s'affichent. Après quelques secondes, les commandes à actionner clignotent. L'avion attend que tu aies tout fait.",
   auto:"Aucune consigne : tu lis les instruments et la carte. L'avion continue, ce qui n'est pas fait à temps est compté manqué."};
  const seg=(id,key)=>{const g=document.getElementById(id);const upd=()=>{g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(MODE[key])));if(key==='mode')document.getElementById('mDesc').textContent=desc[MODE.mode]};
   g.querySelectorAll('button').forEach(b=>b.onclick=()=>{MODE[key]=key==='speed'?+b.dataset.v:b.dataset.v;try{localStorage.setItem('learning-ifr-sim',JSON.stringify(MODE))}catch(e){}upd()});upd()};
  seg('mMode','mode');seg('mSpeed','speed');seg('mSound','sound');seg('mMic','mic');
  document.getElementById('mCs').oninput=e=>{const v=e.target.value.toUpperCase().replace(/[^A-Z-]/g,'');MODE.cs=/^[A-Z]-?[A-Z]{3,4}$/.test(v)?(v.includes('-')?v:v[0]+'-'+v.slice(1)):MODE.cs;try{localStorage.setItem('learning-ifr-sim',JSON.stringify(MODE))}catch(e){}};
- document.getElementById('go').onclick=()=>{unlockTTS();start(block,panel,sc)};
+ const launch=()=>{unlockTTS();start(block,panel,sc)};
+ document.getElementById('go').onclick=()=>{if(avChecked())launch();else{unlockTTS();avDialog(launch)}};
+ document.getElementById('avBtn').onclick=()=>{unlockTTS();avDialog(null)};
 };
 
 function cs(){return MODE.cs||'F-GLIF'}
@@ -352,7 +426,7 @@ function start(block,panel,sc){
    if(R.paused){if(/reprendre|reprise|continue/i.test(t))q('sPause').click();continue}
    if(/^\s*(pause|stop)\s*$/i.test(t)){q('sPause').click();continue}
    const zs=parseVoice(t);if(!zs.length){show('bad','Pas compris : « '+esc(t)+' »');continue}zs.forEach(o=>tap(o.z,'voice',o.q))}};
-  rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){MODE.mic='off';show('bad','Micro refusé : autorise-le dans les réglages du navigateur.',5000);q('mic')&&(q('mic').hidden=true)}};
+  rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){MODE.mic='off';saveAV({mic:null});q('mic')&&(q('mic').hidden=true);if(!R.paused)q('sPause').click();avDialog(null,'Le micro est bloqué : les commandes vocales sont coupées. Autorise-le, puis relance le tour de piste.')}};
   rec.onend=()=>{R.rec=null;q('mic')&&q('mic').classList.remove('on');if(R.alive&&MODE.mic==='on')setTimeout(micStart,250)};
   try{rec.start()}catch(e){R.rec=null}}
  function micStop(){if(R.rec){const r=R.rec;R.rec=null;r.onend=null;try{r.abort()}catch(e){}}}
