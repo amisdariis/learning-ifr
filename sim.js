@@ -158,7 +158,31 @@ const css=`
 @keyframes simflash{from{stroke-width:6;stroke-opacity:1}to{stroke-width:2;stroke-opacity:0}}
 .sim-strip{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:8px;min-height:62px}
 @media (max-width:640px){.sim-strip{grid-template-columns:1fr}}
-.sim:fullscreen{background:var(--bg);padding:10px;overflow:auto}
+.sim-stage.fs{position:fixed;inset:0;z-index:40;border-radius:0;display:flex;align-items:center;justify-content:center;background:#1B2126;
+ padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.sim-stage.fs svg{width:100%;height:100%;max-height:none}
+body.sim-fs{overflow:hidden}
+.fs-ui{display:none}
+.sim-stage.fs .fs-ui{display:flex}
+.fs-ctl{position:absolute;top:max(6px,env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));gap:6px;z-index:2}
+.fs-ctl button{width:34px;height:34px;padding:0;border-radius:50%;background:rgba(7,19,27,.8);border:1px solid #3A434C;color:#E8EDF1;font-size:15px;line-height:1}
+.fs-card{position:absolute;top:max(6px,env(safe-area-inset-top,0px));left:max(6px,env(safe-area-inset-left,0px));width:min(205px,25%);max-height:48%;overflow:auto;flex-direction:column;gap:3px;
+ background:rgba(7,19,27,.9);border:1px solid #3A434C;border-left:3px solid #F064B2;border-radius:8px;padding:6px 9px;color:#E8EDF1;font-size:11.5px;line-height:1.3;z-index:2}
+.fs-card[hidden]{display:none!important}
+.fs-card button.fs-h{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:6px;font-family:var(--f-display);font-size:14px;font-weight:600;letter-spacing:.02em}
+.fs-card .fs-cue{color:#AFC0CC}
+.fs-card ul{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
+.fs-card li{display:grid;grid-template-columns:13px minmax(0,1fr);gap:4px}
+.fs-card li.ok{color:#7BE3A8;text-decoration:line-through;text-decoration-color:rgba(123,227,168,.5)}
+.fs-card li.todo{color:#F7A8D3}
+.fs-card.min ul,.fs-card.min .fs-cue{display:none}
+.fs-toast{position:absolute;left:50%;bottom:max(6px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(460px,70%);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:2;flex-direction:column}
+.fs-toast.show{opacity:1}
+.fs-toast.ok{background:#14301F;color:#7BE3A8;border:1px solid #2F7A4F}
+.fs-toast.bad{background:#3A1C19;color:#FFA59C;border:1px solid #8A3A33}
+.fs-toast.miss{background:#3A2E12;color:#F5C56B;border:1px solid #7A5F22}
+.fs-toast small,.fs-toast .atc{display:block;font-weight:400;font-size:11.5px}
+.fs-toast .atc{color:#9FD3FF}
 .sim-cue{background:#07131B;color:#E8EDF1;border:1px solid #3A434C;border-left:3px solid #F064B2;border-radius:8px;padding:7px 12px;font-size:14px;line-height:1.35;min-width:0}
 .sim-cue b{font-family:var(--f-display);font-size:1.1rem;letter-spacing:.02em;display:block}
 .sim-cue .todo{color:#F7A8D3;font-size:12.5px;margin-top:2px}
@@ -320,7 +344,7 @@ SIM.parseVoice=parseVoice;
 
 /* ---------- moteur ---------- */
 let run=null;
-SIM.stop=function(){if(!run)return;run.alive=false;hush();run.micStop&&run.micStop();cancelAnimationFrame(run.raf);try{run.lock&&run.lock.release()}catch(e){}run=null};
+SIM.stop=function(){if(!run)return;run.fsOff&&run.fsOff();run.alive=false;hush();run.micStop&&run.micStop();cancelAnimationFrame(run.raf);try{run.lock&&run.lock.release()}catch(e){}run=null};
 const MODE={mode:'guide',speed:1,sound:'on',mic:'off',cs:'F-GLIF'};
 try{Object.assign(MODE,JSON.parse(localStorage.getItem('learning-ifr-sim')||'{}'))}catch(e){}
 
@@ -370,7 +394,10 @@ function start(block,panel,sc){
    <div class="row"><button type="button" class="small" id="sPause">Pause</button><button type="button" class="small" id="sFull">Plein écran</button><button type="button" class="small ghost" id="sQuit">Arrêter</button></div></div>
   <div class="sim-strip"><div class="sim-cue" id="cue"></div><div class="sim-toast" id="toast"></div></div>
   <div class="sim-mic" id="mic" ${MODE.mic==='on'&&SRC?'':'hidden'}><span class="dot"></span><span>Commandes vocales</span><span id="heard"></span></div>
-  <div class="sim-stage" id="stage">${svg}<div class="sim-paused" id="pz" hidden>PAUSE</div></div>
+  <div class="sim-stage" id="stage">${svg}<div class="sim-paused" id="pz" hidden>PAUSE</div>
+   <div class="fs-ui fs-card" id="fsCard" ${MODE.mode==='guide'?'':'hidden'}></div>
+   <div class="fs-ui fs-ctl"><button type="button" id="fsPause" aria-label="Pause">❚❚</button><button type="button" id="fsExit" aria-label="Quitter le plein écran">✕</button></div>
+   <div class="fs-ui fs-toast" id="fsToast"></div></div>
   <p class="sim-rot">Tourne le téléphone en paysage pour agrandir la planche.</p></div>`;
  const q=id=>document.getElementById(id);
  parts.forEach(p=>p.R=p.b.bind(q));
@@ -381,7 +408,9 @@ function start(block,panel,sc){
  if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{R.lock=l}).catch(()=>{});
  const zl=Object.fromEntries(panel.elements.filter(e=>e.z).map(e=>[e.z,e.zl||e.label||e.z]));
  const cue=q('cue'),toast=q('toast');let toastT=0;
- const show=(cls,html,ms)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;clearTimeout(toastT);toastT=setTimeout(()=>toast.classList.remove('show'),ms||2600)};
+ const fsT=q('fsToast');let fsMin=false;
+ const show=(cls,html,ms)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;fsT.className='fs-ui fs-toast show '+cls;fsT.innerHTML=html;clearTimeout(toastT);
+  toastT=setTimeout(()=>{toast.classList.remove('show');fsT.classList.remove('show')},ms||2600)};
  const ring=(z,cls)=>{const r=q('ring_'+z);if(!r)return;r.classList.remove('ok','bad');void r.getBBox();r.classList.add(cls)};
  const counts=()=>{q('cOk').textContent=R.ok;q('cMiss').textContent=R.miss;q('cBad').textContent=R.bad;q('cPh').textContent=Math.min(R.pi+1,sc.phases.length)};
  const cur=()=>sc.phases[R.pi];
@@ -397,7 +426,12 @@ function start(block,panel,sc){
  function drawCue(){const ph=cur();if(!ph)return;
   if(MODE.mode==='guide'){const pend=R.acts.filter(x=>x.s==='pending');
    cue.innerHTML=`<b>${esc(ph.name)}</b>${esc(T(ph.cue||''))}${R.pt>2.5&&pend.length?`<div class="todo">À faire : ${pend.map(x=>esc(T(x.a.label))).join(' · ')}</div>`:''}`}
-  else cue.innerHTML=`<b>${esc(ph.leg||'')}</b>`}
+  else cue.innerHTML=`<b>${esc(ph.leg||'')}</b>`;
+  if(MODE.mode==='guide'){const c=q('fsCard');c.classList.toggle('min',fsMin);
+   const nOk=R.acts.filter(x=>x.s==='ok').length,pend=R.acts.filter(x=>x.s!=='ok');
+   c.innerHTML=`<button type="button" class="fs-h" id="fsH" aria-expanded="${!fsMin}"><span>${esc(ph.name)}</span><span>${R.acts.length?nOk+'/'+R.acts.length+' ':''}${fsMin?'▸':'▾'}</span></button><div class="fs-cue">${esc(T(ph.cue||''))}</div>
+    <ul>${pend.map(x=>`<li class="${R.pt>2.5?'todo':''}"><span>·</span><span>${esc(T(x.a.label))}</span></li>`).join('')}</ul>`;
+   q('fsH').onclick=()=>{fsMin=!fsMin;drawCue()}}}
  function apply(a){if(a.set!==undefined)st.ctl[a.c]=a.set;if(a.fx)a.fx(st.ctl,st);if(a.c==='trim')st.anim.trim=performance.now();if(a.c==='stick')st.anim.stick=performance.now();if(a.c==='radio')st.anim.tx=performance.now()+1600}
  function tap(z,src,qv){
   if(!R.alive||R.paused||!cur())return;
@@ -433,7 +467,14 @@ function start(block,panel,sc){
  R.micStop=micStop;
  q('stage').addEventListener('pointerdown',ev=>{const g=ev.target.closest('.zone');if(g){ev.preventDefault();tap(g.dataset.z)}});
  q('sPause').onclick=()=>{R.paused=!R.paused;q('pz').hidden=!R.paused;q('sPause').textContent=R.paused?'Reprendre':'Pause';if(R.paused)hush()};
- q('sFull').onclick=()=>{const s=q('simRoot');try{(document.fullscreenElement?document.exitFullscreen():(s.requestFullscreen||s.webkitRequestFullscreen).call(s))}catch(e){}};
+ const stage=q('stage');
+ const fsOn=()=>{stage.classList.add('fs');document.body.classList.add('sim-fs');const d=document.documentElement;
+  try{const r=(d.requestFullscreen||d.webkitRequestFullscreen);r&&Promise.resolve(r.call(d)).then(()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}};
+ const fsOff=()=>{stage.classList.remove('fs');document.body.classList.remove('sim-fs');try{if(document.fullscreenElement)document.exitFullscreen();else if(document.webkitFullscreenElement)document.webkitExitFullscreen()}catch(e){}};
+ R.fsOff=fsOff;
+ q('sFull').onclick=fsOn;q('fsExit').onclick=fsOff;q('fsPause').onclick=()=>{q('sPause').click();q('fsPause').textContent=R.paused?'▶':'❚❚'};
+ document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&stage.classList.contains('fs')&&R.alive)fsOff()});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&stage.classList.contains('fs'))fsOff()});
  q('sQuit').onclick=()=>finish(true);
  function step(dt){
   const ph=cur();if(!ph)return;R.pt+=dt;
@@ -459,7 +500,7 @@ function start(block,panel,sc){
  let last=performance.now();
  function frame(now){if(!R.alive)return;const dt=Math.min(.1,(now-last)/1000)*MODE.speed;last=now;if(!R.paused)step(dt);if(R.alive){draw();R.raf=requestAnimationFrame(frame)}}
  function finish(aborted){
-  if(!R.alive)return;R.alive=false;cancelAnimationFrame(R.raf);try{R.lock&&R.lock.release()}catch(e){}
+  if(!R.alive)return;R.alive=false;cancelAnimationFrame(R.raf);R.fsOff&&R.fsOff();try{R.lock&&R.lock.release()}catch(e){}
   if(R.acts)R.acts.filter(x=>x.s==='pending').forEach(x=>x.s='miss');
   hush();micStop();
   debrief(block,sc,R,aborted);run=null;
