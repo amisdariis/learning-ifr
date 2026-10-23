@@ -158,29 +158,28 @@ const css=`
 @keyframes simflash{from{stroke-width:6;stroke-opacity:1}to{stroke-width:2;stroke-opacity:0}}
 .sim-strip{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:8px;min-height:62px}
 @media (max-width:640px){.sim-strip{grid-template-columns:1fr}}
-.sim-stage.fs{position:fixed;inset:0;z-index:40;border-radius:0;display:flex;align-items:center;justify-content:center;background:#1B2126;
+.sim-stage.fs{position:fixed;inset:0;z-index:40;border-radius:0;display:flex;flex-direction:row;align-items:stretch;background:#1B2126;
  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-.sim-stage.fs svg{width:100%;height:100%;max-height:none}
+.sim-stage svg{order:2}
+.sim-stage.fs svg{flex:1 1 auto;min-width:0;width:auto;height:100%;max-height:none}
 body.sim-fs{overflow:hidden}
-.fs-ui{display:none}
-.sim-stage.fs .fs-ui{display:flex}
-.fs-ctl{position:absolute;top:max(6px,env(safe-area-inset-top,0px));right:max(6px,env(safe-area-inset-right,0px));gap:6px;z-index:2}
-.fs-ctl button{width:34px;height:34px;padding:0;border-radius:50%;background:rgba(7,19,27,.8);border:1px solid #3A434C;color:#E8EDF1;font-size:15px;line-height:1}
-.fs-card{position:absolute;top:max(6px,env(safe-area-inset-top,0px));left:max(6px,env(safe-area-inset-left,0px));width:min(205px,25%);max-height:48%;overflow:auto;flex-direction:column;gap:3px;
- background:rgba(7,19,27,.9);border:1px solid #3A434C;border-left:3px solid #F064B2;border-radius:8px;padding:6px 9px;color:#E8EDF1;font-size:11.5px;line-height:1.3;z-index:2}
+.fs-side{display:none}
+.sim-stage.fs .fs-side{order:1;display:flex;flex-direction:column;gap:6px;flex:0 0 min(210px,26vw);padding:6px;min-height:0;font-size:12px}
+.fs-ctl{display:flex;gap:6px}
+.fs-ctl button{width:36px;height:36px;padding:0;border-radius:50%;background:#07131B;border:1px solid #3A434C;color:#E8EDF1;font-size:15px;line-height:1}
+.fs-card{flex:0 1 auto;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:3px;background:#07131B;border:1px solid #3A434C;border-left:3px solid #F064B2;border-radius:8px;padding:6px 9px;color:#E8EDF1;font-size:12px;line-height:1.3}
 .fs-card[hidden]{display:none!important}
-.fs-card button.fs-h{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:6px;font-family:var(--f-display);font-size:14px;font-weight:600;letter-spacing:.02em}
+.fs-card button.fs-h{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:6px;font-family:var(--f-display);font-size:15px;font-weight:600;letter-spacing:.02em}
 .fs-card .fs-cue{color:#AFC0CC}
 .fs-card ul{list-style:none;margin:2px 0 0;padding:0;display:flex;flex-direction:column;gap:2px}
-.fs-card li{display:grid;grid-template-columns:13px minmax(0,1fr);gap:4px}
-.fs-card li.ok{color:#7BE3A8;text-decoration:line-through;text-decoration-color:rgba(123,227,168,.5)}
+.fs-card li{display:grid;grid-template-columns:10px minmax(0,1fr);gap:4px}
 .fs-card li.todo{color:#F7A8D3}
 .fs-card.min ul,.fs-card.min .fs-cue{display:none}
-.fs-toast{position:absolute;left:50%;bottom:max(6px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(460px,70%);border-radius:8px;padding:5px 10px;font-size:12.5px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:2;flex-direction:column}
+.fs-toast{margin-top:auto;border-radius:8px;padding:5px 9px;font-size:12px;font-weight:600;opacity:0;transition:opacity .3s;border:1px solid transparent}
 .fs-toast.show{opacity:1}
-.fs-toast.ok{background:#14301F;color:#7BE3A8;border:1px solid #2F7A4F}
-.fs-toast.bad{background:#3A1C19;color:#FFA59C;border:1px solid #8A3A33}
-.fs-toast.miss{background:#3A2E12;color:#F5C56B;border:1px solid #7A5F22}
+.fs-toast.ok{background:#14301F;color:#7BE3A8;border-color:#2F7A4F}
+.fs-toast.bad{background:#3A1C19;color:#FFA59C;border-color:#8A3A33}
+.fs-toast.miss{background:#3A2E12;color:#F5C56B;border-color:#7A5F22}
 .fs-toast small,.fs-toast .atc{display:block;font-weight:400;font-size:11.5px}
 .fs-toast .atc{color:#9FD3FF}
 .sim-cue{background:#07131B;color:#E8EDF1;border:1px solid #3A434C;border-left:3px solid #F064B2;border-radius:8px;padding:7px 12px;font-size:14px;line-height:1.35;min-width:0}
@@ -395,9 +394,9 @@ function start(block,panel,sc){
   <div class="sim-strip"><div class="sim-cue" id="cue"></div><div class="sim-toast" id="toast"></div></div>
   <div class="sim-mic" id="mic" ${MODE.mic==='on'&&SRC?'':'hidden'}><span class="dot"></span><span>Commandes vocales</span><span id="heard"></span></div>
   <div class="sim-stage" id="stage">${svg}<div class="sim-paused" id="pz" hidden>PAUSE</div>
-   <div class="fs-ui fs-card" id="fsCard" ${MODE.mode==='guide'?'':'hidden'}></div>
-   <div class="fs-ui fs-ctl"><button type="button" id="fsPause" aria-label="Pause">❚❚</button><button type="button" id="fsExit" aria-label="Quitter le plein écran">✕</button></div>
-   <div class="fs-ui fs-toast" id="fsToast"></div></div>
+   <div class="fs-side" id="fsSide"><div class="fs-ctl"><button type="button" id="fsPause" aria-label="Pause">❚❚</button><button type="button" id="fsExit" aria-label="Quitter le plein écran">✕</button></div>
+    <div class="fs-card" id="fsCard" ${MODE.mode==='guide'?'':'hidden'}></div>
+    <div class="fs-toast" id="fsToast"></div></div></div>
   <p class="sim-rot">Tourne le téléphone en paysage pour agrandir la planche.</p></div>`;
  const q=id=>document.getElementById(id);
  parts.forEach(p=>p.R=p.b.bind(q));
@@ -409,7 +408,7 @@ function start(block,panel,sc){
  const zl=Object.fromEntries(panel.elements.filter(e=>e.z).map(e=>[e.z,e.zl||e.label||e.z]));
  const cue=q('cue'),toast=q('toast');let toastT=0;
  const fsT=q('fsToast');let fsMin=false;
- const show=(cls,html,ms)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;fsT.className='fs-ui fs-toast show '+cls;fsT.innerHTML=html;clearTimeout(toastT);
+ const show=(cls,html,ms)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;fsT.className='fs-toast show '+cls;fsT.innerHTML=html;clearTimeout(toastT);
   toastT=setTimeout(()=>{toast.classList.remove('show');fsT.classList.remove('show')},ms||2600)};
  const ring=(z,cls)=>{const r=q('ring_'+z);if(!r)return;r.classList.remove('ok','bad');void r.getBBox();r.classList.add(cls)};
  const counts=()=>{q('cOk').textContent=R.ok;q('cMiss').textContent=R.miss;q('cBad').textContent=R.bad;q('cPh').textContent=Math.min(R.pi+1,sc.phases.length)};
