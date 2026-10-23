@@ -49,13 +49,13 @@ alt(e){const {x,y,r}=e;let h=bezel(x,y,r);
  h+=txt(x,y-r*.3,'ALT',r*.12,'#9AA7B2')+txt(x-r*.38,y+r*.25,'FT',r*.1,'#9AA7B2');
  h+=`<g id="${e.z}_t"><path d="M${x-5} ${y+6} L${x} ${y-r*.5} L${x+5} ${y+6}Z" fill="#F4F6F8"/></g>`+needle(e.z+'_h',x,y,r*.86,2.2);
  return{h,box:[x-r,y-r,2*r,2*r],bind:q=>({h:q(e.z+'_h'),t:q(e.z+'_t'),q:q(e.z+'_q')}),
-  upd:(R,st,S)=>{const al=S.elev+st.agl;rot(R.h,(al%1000)/1000*360,x,y);rot(R.t,al/10000*360,x,y);R.q.textContent=S.qnh}}},
+  upd:(R,st,S)=>{const al=S.elev+st.agl+((st.ctl.qnh||S.qnh)-S.qnh)*28;rot(R.h,(((al%1000)+1000)%1000)/1000*360,x,y);rot(R.t,al/10000*360,x,y);R.q.textContent=st.ctl.qnh||S.qnh}}},
 tc(e){const {x,y,r}=e;let h=bezel(x,y,r);
  for(const a of [-90,90,-110,110])h+=tick(x,y,r*.78,r*.95,a,3);
  h+=txt(x-r*.62,y+r*.42,'G',r*.15)+txt(x+r*.62,y+r*.42,'D',r*.15)+txt(x,y-r*.42,'2 MIN',r*.12,'#9AA7B2');
  h+=`<g id="${e.z}_p"><path d="M${x-r*.7} ${y} h${r*.55} m${r*.3} 0 h${r*.55}" stroke="#F4F6F8" stroke-width="4"/><circle cx="${x}" cy="${y}" r="${r*.12}" fill="#F4F6F8"/><path d="M${x} ${y-r*.12} v-${r*.16}" stroke="#F4F6F8" stroke-width="3"/></g>`;
  h+=`<rect x="${x-r*.45}" y="${y+r*.5}" width="${r*.9}" height="${r*.2}" rx="${r*.1}" fill="#E9E2C8"/><line x1="${x-r*.1}" y1="${y+r*.5}" x2="${x-r*.1}" y2="${y+r*.7}" stroke="#222"/><line x1="${x+r*.1}" y1="${y+r*.5}" x2="${x+r*.1}" y2="${y+r*.7}" stroke="#222"/><circle cx="${x}" cy="${y+r*.6}" r="${r*.085}" fill="#111"/>`;
- return{h,box:[x-r,y-r,2*r,2*r],bind:q=>({p:q(e.z+'_p')}),upd:(R,st)=>rot(R.p,clamp(st.bank,-30,30)*.8,x,y)}},
+ return{h,box:[x-r,y-r,2*r,2*r],bind:q=>({p:q(e.z+'_p')}),upd:(R,st)=>rot(R.p,clamp(st.turn??st.bank,-30,30)*.8,x,y)}},
 dg(e){const {x,y,r}=e;let h=bezel(x,y,r)+`<g id="${e.z}_c">`;
  for(let a=0;a<360;a+=5)h+=tick(x,y,r*(a%10===0?.8:.86),r*.93,a,a%30===0?2:1);
  const L={0:'N',90:'E',180:'S',270:'O'};
@@ -114,9 +114,9 @@ stick(e){const {x,y}=e;
  return{h,box:[x-50,y-46,100,156],bind:q=>({g:q(e.z+'_g')}),upd:(R,st)=>{const t=clamp((performance.now()-st.anim.stick)/700,0,1);R.g.setAttribute('transform',`translate(0 ${(t<1?Math.sin(t*Math.PI)*10:0).toFixed(1)})`)}}},
 radio(e){const {x,y,w,h:H}=e;
  const h=`<rect x="${x}" y="${y}" width="${w}" height="${H}" rx="5" fill="#0A0D10" stroke="#3A434C"/>${txt(x+10,y+14,'COM 1',9.5,'#9AA7B2','start')}
-  ${txt(x+w-10,y+H/2+6,e.freq,19,'#5BE38E','end','font-weight="600"')}<rect id="${e.z}_tx" x="${x+10}" y="${y+H-20}" width="26" height="13" rx="2"/>${txt(x+23,y+H-13.5,'TX',8.5,'#0A0D10')}
+  ${txt(x+w-10,y+H/2+6,'<tspan id="'+e.z+'_f">'+e.freq+'</tspan>',19,'#5BE38E','end','font-weight="600"')}<rect id="${e.z}_tx" x="${x+10}" y="${y+H-20}" width="26" height="13" rx="2"/>${txt(x+23,y+H-13.5,'TX',8.5,'#0A0D10')}
   ${txt(x+w/2,y+H+13,e.label,11,'#C9D3DB')}`;
- return{h,box:[x-6,y-6,w+12,H+28],bind:q=>({tx:q(e.z+'_tx')}),upd:(R,st)=>R.tx.setAttribute('fill',performance.now()<st.anim.tx?'#F5B13D':'#262C32')}},
+ return{h,box:[x-6,y-6,w+12,H+28],bind:q=>({tx:q(e.z+'_tx'),f:q(e.z+'_f')}),upd:(R,st)=>{R.tx.setAttribute('fill',performance.now()<st.anim.tx?'#F5B13D':'#262C32');if(st.ctl.freq)R.f.textContent=st.ctl.freq}}},
 xpdr(e){const {x,y,w,h:H}=e;
  const h=`<rect x="${x}" y="${y}" width="${w}" height="${H}" rx="5" fill="#0A0D10" stroke="#3A434C"/>${txt(x+10,y+14,'XPDR',9.5,'#9AA7B2','start')}
   ${txt(x+w-60,y+H/2+6,e.code,19,'#5BE38E','end','font-weight="600"')}${txt(x+w-10,y+H/2+6,'<tspan id="'+e.z+'_m"></tspan>',13,'#F5B13D','end','font-weight="600"')}
@@ -186,13 +186,70 @@ const css=`
 .debrief li.ok .s{color:var(--ok)} .debrief li.miss .s{color:var(--err)}
 .debrief li .why{grid-column:2;color:var(--muted);font-size:13px}
 .big{font-family:var(--f-display);font-weight:700;font-size:3rem;line-height:1}
+.sim-mic{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;min-width:0}
+.sim-mic .dot{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+.sim-mic.on .dot{background:#F064B2}
+.sim-mic span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.sim-toast .atc{display:block;margin-top:4px;color:#9FD3FF;font-weight:500;font-size:13px}
+.cs{font:600 1.1rem var(--f-mono);padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:10ch;text-transform:uppercase}
 `;
 let styled=false;function addStyle(){if(styled)return;styled=true;const s=document.createElement('style');s.textContent=css;document.head.appendChild(s)}
 
+/* ---------- voix : synthèse (consignes, radio) ---------- */
+const SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+const TTS={q:[],busy:false,until:0};
+const ICAO={A:'Alpha',B:'Bravo',C:'Charlie',D:'Delta',E:'Echo',F:'Fox',G:'Golf',H:'Hotel',I:'India',J:'Juliett',K:'Kilo',L:'Lima',M:'Mike',N:'November',O:'Oscar',P:'Papa',Q:'Québec',R:'Roméo',S:'Sierra',T:'Tango',U:'Uniform',V:'Victor',W:'Whisky',X:'X-ray',Y:'Yankee',Z:'Zoulou'};
+const DIG=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf'];
+function pickVoices(){if(!('speechSynthesis' in window))return;const v=speechSynthesis.getVoices().filter(x=>/^fr/i.test(x.lang));
+ const fr=v.filter(x=>/fr-FR/i.test(x.lang));TTS.pilot=fr[0]||v[0]||null;TTS.atc=fr.find(x=>x!==TTS.pilot)||v.find(x=>x!==TTS.pilot)||TTS.pilot}
+if('speechSynthesis' in window){pickVoices();speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',pickVoices)}
+function unlockTTS(){if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('.');u.volume=0;u.lang='fr-FR';speechSynthesis.speak(u)}catch(e){}pickVoices()}
+function radioTts(t){return t.replace(/(\d+)[.,](\d+)/g,(m,a,b)=>a.split('').map(d=>DIG[d]).join(' ')+' décimale '+b.split('').map(d=>DIG[d]).join(' '))
+ .replace(/\b(\d{2,4})\b(?!\s*(nœuds|personnes))/g,m=>m.split('').map(d=>DIG[d]).join(' '))}
+function sayQ(text,who){if(MODE.sound!=='on'||!('speechSynthesis' in window)||!text)return;TTS.q.push({text:who==='instr'?text:radioTts(text),who});if(!TTS.busy)sayNext()}
+function sayNext(){const it=TTS.q.shift();if(!it){TTS.busy=false;TTS.until=performance.now()+700;return}TTS.busy=true;
+ const u=new SpeechSynthesisUtterance(it.text);u.lang='fr-FR';const v=it.who==='atc'?TTS.atc:TTS.pilot;if(v)u.voice=v;
+ u.rate=it.who==='atc'?1.12:1.05;u.pitch=it.who==='atc'?.8:it.who==='instr'?1.1:1;
+ let done=false;const fin=()=>{if(done)return;done=true;setTimeout(sayNext,it.who==='pilot'?500:200)};u.onend=fin;u.onerror=fin;
+ try{speechSynthesis.speak(u)}catch(e){fin()}setTimeout(fin,2500+it.text.length*95)}
+function hush(){TTS.q=[];TTS.busy=false;try{speechSynthesis.cancel()}catch(e){}}
+const speakingNow=()=>TTS.busy||performance.now()<TTS.until;
+
+/* ---------- dictée des commandes ---------- */
+const VOC=[ // ordre = priorité ; le texte reconnu est masqué au fur et à mesure
+ ['fuelP',/pression (d'|d |de l')?(essence|carburant)/],['oilP',/pression (d'|d |de l')?huile|pressions?/],['oilT',/temp[ée]ratures? (d'|d |de l')?huile|temp[ée]ratures?/],
+ ['tach',/compte[- ]?tours?|tours? moteur|r[ée]gime|tours? minute/],
+ ['throttle',/pleins? gaz|gaz|r[ée]duc\w*|r[ée]dui\w*|puissance|manette|ralenti/],
+ ['flaps',/volets?|cran/],['carb',/r[ée]chauf\w*|carbu(?!rant)\w*/],['mixture',/m[ée]lange|richesse|[ée]touffoir/],
+ ['pump',/pompe/],['lights',/phares?/],['nav',/feux? de nav\w*|\bnav\b|feux? de position/],['strobe',/anti ?coll\w*|strobe|flash/],
+ ['batt',/batterie/],['alt',/alternateur|g[ée]n[ée]ratrice/],['xpdr',/transpondeur|transpo\b|squawk|mode alt/],
+ ['trim',/compens\w*|trim/],['stick',/rotation|cabr\w*|arrondi|manche|assiette/],
+ ['brake',/frein\w*/],['altim',/altim[èe]tre|calage|qnh|cal[ée]/],['mags',/magn[ée]to\w*|d[ée]marr\w*|contact/],
+ ['fuel',/robinet|r[ée]servoir|essence|carburant/],['asi',/an[ée]mom[èe]tre|badin|vitesse/],['dg',/conservateur|compas|cap\b/],['tc',/bille|aiguille/],['ai',/horizon/],['vsi',/vario\w*/],
+ ['radio',/radio|annonce|collation\w*|lasbordes|\btour\b|atis|information|fox|\bf ?g\w*|pr[eê]t|vent arri[èe]re|finale|d[ée]gag\w*|roul\w*|align\w*|autoris\w*/]];
+function parseVoice(t){let s=' '+t.toLowerCase().replace(/[’]/g,"'")+' ';const out=[];
+ for(const [z,re] of VOC){const g=new RegExp(re.source,'g');let m;while((m=g.exec(s))){out.push({i:m.index,z});s=s.slice(0,m.index)+' '.repeat(m[0].length)+s.slice(m.index+m[0].length);g.lastIndex=m.index+m[0].length}}
+ out.sort((a,b)=>a.i-b.i);const low=' '+t.toLowerCase()+' ';
+ out.forEach((o,k)=>o.seg=low.slice(o.i,k+1<out.length?out[k+1].i:low.length));
+ const seen=new Set();return out.filter(o=>{if(seen.has(o.z))return false;seen.add(o.z);return true}).map(o=>({z:o.z,q:qual(o.z,o.seg)}))}
+/* intention exprimée à la voix : null si rien de précis */
+const ONW=/\b(on|allum\w*|marche|en service|branch\w*)\b/,OFFW=/\b(off|coup\w*|[ée]tein\w*|hors service)\b/;
+function qual(z,g){
+ if(z==='throttle'){if(/plein/.test(g))return'plein';if(/r[ée]du|ralenti|mille|1000|palier|1700|1800|2250/.test(g))return'reduce';return null}
+ if(z==='flaps'){if(/rentr|z[ée]ro|lisse|\b0\b/.test(g))return 0;if(/atterr|deux|2|second|plein|sorti/.test(g))return 2;if(/un cran|premier|d[ée]coll|\b1\b|\bun\b/.test(g))return 1;return null}
+ if(z==='carb'){if(/chaud/.test(g))return'chaud';if(/froid/.test(g))return'froid';return null}
+ if(z==='mixture'){if(/riche/.test(g))return'riche';if(/pauvre|[ée]touff|coup/.test(g))return'pauvre';return null}
+ if(z==='brake'){if(/desserr|libre|l[âa]ch/.test(g))return'libre';if(/serr/.test(g))return'serré';return null}
+ if(z==='xpdr'){if(/\balt\b|alpha|charlie|mode c/.test(g))return'ALT';if(/stby|stand ?by|attente|veille/.test(g))return'STBY';return null}
+ if(['pump','lights','nav','strobe','batt','alt'].includes(z)){if(OFFW.test(g))return false;if(ONW.test(g))return true;return null}
+ return null}
+function qualOk(a,q){if(q==null||a.set===undefined)return true;if(a.c==='throttle')return q==='plein'?a.set==='plein':a.set!=='plein';return a.set===q}
+SIM.parseVoice=parseVoice;
+
 /* ---------- moteur ---------- */
 let run=null;
-SIM.stop=function(){if(!run)return;run.alive=false;cancelAnimationFrame(run.raf);try{run.lock&&run.lock.release()}catch(e){}run=null};
-const MODE={mode:'guide',speed:1};
+SIM.stop=function(){if(!run)return;run.alive=false;hush();run.micStop&&run.micStop();cancelAnimationFrame(run.raf);try{run.lock&&run.lock.release()}catch(e){}run=null};
+const MODE={mode:'guide',speed:1,sound:'on',mic:'off',cs:'F-GLIF'};
 try{Object.assign(MODE,JSON.parse(localStorage.getItem('learning-ifr-sim')||'{}'))}catch(e){}
 
 SIM.view=function(block){
@@ -205,16 +262,26 @@ SIM.view=function(block){
   <div class="opt"><span class="lbl">Mode</span><div class="seg" id="mMode"><button type="button" data-v="guide">Guidé</button><button type="button" data-v="auto">Autonome</button></div>
    <p class="note" id="mDesc"></p></div>
   <div class="opt"><span class="lbl">Cadence</span><div class="seg" id="mSpeed"><button type="button" data-v="0.7">Lente</button><button type="button" data-v="1">Normale</button><button type="button" data-v="1.4">Rapide</button></div></div>
+  <div class="opt"><span class="lbl">Son : consignes et radio</span><div class="seg" id="mSound"><button type="button" data-v="on">Activé</button><button type="button" data-v="off">Coupé</button></div></div>
+  <div class="opt"><span class="lbl">Commandes vocales</span><div class="seg" id="mMic"><button type="button" data-v="on">Activées</button><button type="button" data-v="off">Désactivées</button></div>
+   <p class="note">${SRC?"Dis l'action : « plein gaz », « volets un cran », « pompe », « réchauffage », « compenser »… Pour la radio, dis ton message ou « radio ».":"La dictée n'est pas disponible dans ce navigateur (Chrome sur Android ou Safari sur iPhone la gèrent)."}</p></div>
+  <div class="opt"><label class="lbl" for="mCs">Indicatif</label><input class="cs" id="mCs" maxlength="6" value="${esc(MODE.cs)}" autocomplete="off"></div>
   <p class="note">${sc.phases.length} phases, ${nAct} actions. Touche la commande ou l'instrument concerné : un appui suffit, la précision du geste ne compte pas.</p>
   <div class="row"><button type="button" class="primary" id="go">Démarrer le tour de piste</button><a class="btn ghost" href="#/f/${block.id}">Fiche mémo</a></div>`;
  const desc={guide:"La phase et la consigne s'affichent. Après quelques secondes, les commandes à actionner clignotent. L'avion attend que tu aies tout fait.",
   auto:"Aucune consigne : tu lis les instruments et la carte. L'avion continue, ce qui n'est pas fait à temps est compté manqué."};
  const seg=(id,key)=>{const g=document.getElementById(id);const upd=()=>{g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v)===String(MODE[key])));if(key==='mode')document.getElementById('mDesc').textContent=desc[MODE.mode]};
   g.querySelectorAll('button').forEach(b=>b.onclick=()=>{MODE[key]=key==='speed'?+b.dataset.v:b.dataset.v;try{localStorage.setItem('learning-ifr-sim',JSON.stringify(MODE))}catch(e){}upd()});upd()};
- seg('mMode','mode');seg('mSpeed','speed');
- document.getElementById('go').onclick=()=>start(block,panel,sc);
+ seg('mMode','mode');seg('mSpeed','speed');seg('mSound','sound');seg('mMic','mic');
+ document.getElementById('mCs').oninput=e=>{const v=e.target.value.toUpperCase().replace(/[^A-Z-]/g,'');MODE.cs=/^[A-Z]-?[A-Z]{3,4}$/.test(v)?(v.includes('-')?v:v[0]+'-'+v.slice(1)):MODE.cs;try{localStorage.setItem('learning-ifr-sim',JSON.stringify(MODE))}catch(e){}};
+ document.getElementById('go').onclick=()=>{unlockTTS();start(block,panel,sc)};
 };
 
+function cs(){return MODE.cs||'F-GLIF'}
+function csShort(){const c=cs().replace('-','');return c[0]+'-'+c.slice(-2)}
+function T(s,speech){if(!s)return s;const ph=w=>w.replace('-','').split('').map(c=>ICAO[c]||c).join(' ');
+ return s.replace(/\{CS\}/g,speech?ph(cs()):cs()).replace(/\{cs\}/g,speech?ph(csShort()):csShort())}
+SIM.T=T;
 function start(block,panel,sc){
  const el=document.getElementById('view');
  const parts=panel.elements.map(e=>({e,b:B[e.type](e)}));
@@ -228,18 +295,19 @@ function start(block,panel,sc){
   <div class="sim-bar"><div class="sim-count"><span>Phase <b id="cPh">1</b>/${sc.phases.length}</span><span>✓ <b id="cOk">0</b></span><span>manquées <b id="cMiss">0</b></span><span>erreurs <b id="cBad">0</b></span></div>
    <div class="row"><button type="button" class="small" id="sPause">Pause</button><button type="button" class="small" id="sFull">Plein écran</button><button type="button" class="small ghost" id="sQuit">Arrêter</button></div></div>
   <div class="sim-strip"><div class="sim-cue" id="cue"></div><div class="sim-toast" id="toast"></div></div>
+  <div class="sim-mic" id="mic" ${MODE.mic==='on'&&SRC?'':'hidden'}><span class="dot"></span><span>Commandes vocales</span><span id="heard"></span></div>
   <div class="sim-stage" id="stage">${svg}<div class="sim-paused" id="pz" hidden>PAUSE</div></div>
   <p class="sim-rot">Tourne le téléphone en paysage pour agrandir la planche.</p></div>`;
  const q=id=>document.getElementById(id);
  parts.forEach(p=>p.R=p.b.bind(q));
  const st=Object.assign({agl:0,ias:0,vs:0,hdg:sc.qfu,pos:0,bank:0,pitch:0,rpm:900},sc.init&&sc.init.vars||{});
  st.ctl=Object.assign({},panel.init,sc.init&&sc.init.ctl||{});st.anim={trim:0,stick:0,tx:0};
- const R={alive:true,raf:0,paused:false,pi:-1,pt:0,from:null,prevHdg:st.hdg,log:[],ok:0,miss:0,bad:0,wrong:[],shown:{},S:{elev:sc.elev,qnh:sc.qnh||1013,leg:''}};
+ const R={alive:true,raf:0,paused:false,pi:-1,pt:0,from:null,prevHdg:st.hdg,log:[],ok:0,miss:0,bad:0,wrong:[],shown:{},S:{elev:sc.elev,qnh:sc.qnh||1013,leg:''},rec:null};
  run=R;
  if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>{R.lock=l}).catch(()=>{});
  const zl=Object.fromEntries(panel.elements.filter(e=>e.z).map(e=>[e.z,e.zl||e.label||e.z]));
  const cue=q('cue'),toast=q('toast');let toastT=0;
- const show=(cls,html)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;clearTimeout(toastT);toastT=setTimeout(()=>toast.classList.remove('show'),2600)};
+ const show=(cls,html,ms)=>{toast.className='sim-toast show '+cls;toast.innerHTML=html;clearTimeout(toastT);toastT=setTimeout(()=>toast.classList.remove('show'),ms||2600)};
  const ring=(z,cls)=>{const r=q('ring_'+z);if(!r)return;r.classList.remove('ok','bad');void r.getBBox();r.classList.add(cls)};
  const counts=()=>{q('cOk').textContent=R.ok;q('cMiss').textContent=R.miss;q('cBad').textContent=R.bad;q('cPh').textContent=Math.min(R.pi+1,sc.phases.length)};
  const cur=()=>sc.phases[R.pi];
@@ -250,18 +318,22 @@ function start(block,panel,sc){
   R.acts=(ph.actions||[]).map(a=>({a,s:'pending'}));R.S.leg=ph.leg||'';
   document.querySelectorAll('.sim-stage .ring.hint').forEach(r=>r.classList.remove('hint'));
   drawCue();counts();
-  if(MODE.mode==='guide'&&typeof voice!=='undefined'&&voice&&typeof speak==='function')speak(ph.cue||ph.name);
+  if(MODE.mode==='guide')sayQ(T(ph.cue||ph.name),'instr');
  }
  function drawCue(){const ph=cur();if(!ph)return;
   if(MODE.mode==='guide'){const pend=R.acts.filter(x=>x.s==='pending');
-   cue.innerHTML=`<b>${esc(ph.name)}</b>${esc(ph.cue||'')}${R.pt>2.5&&pend.length?`<div class="todo">À faire : ${pend.map(x=>esc(x.a.label)).join(' · ')}</div>`:''}`}
+   cue.innerHTML=`<b>${esc(ph.name)}</b>${esc(T(ph.cue||''))}${R.pt>2.5&&pend.length?`<div class="todo">À faire : ${pend.map(x=>esc(T(x.a.label))).join(' · ')}</div>`:''}`}
   else cue.innerHTML=`<b>${esc(ph.leg||'')}</b>`}
- function apply(a){if(a.set!==undefined)st.ctl[a.c]=a.set;if(a.c==='trim')st.anim.trim=performance.now();if(a.c==='stick')st.anim.stick=performance.now();if(a.c==='radio')st.anim.tx=performance.now()+1600}
- function tap(z){
+ function apply(a){if(a.set!==undefined)st.ctl[a.c]=a.set;if(a.fx)a.fx(st.ctl,st);if(a.c==='trim')st.anim.trim=performance.now();if(a.c==='stick')st.anim.stick=performance.now();if(a.c==='radio')st.anim.tx=performance.now()+1600}
+ function tap(z,src,qv){
   if(!R.alive||R.paused||!cur())return;
-  const x=R.acts.find(x=>x.s==='pending'&&x.a.c===z);
-  if(x){x.s='ok';R.ok++;apply(x.a);ring(z,'ok');const r=q('ring_'+z);r&&r.classList.remove('hint');
-   show('ok','✓ '+esc(x.a.label)+(x.a.say?`<small>« ${esc(x.a.say)} »</small>`:''));counts();drawCue();return}
+  let x=R.acts.find(x=>x.s==='pending'&&x.a.c===z&&qualOk(x.a,qv));
+  if(!x&&R.acts.some(x=>x.s==='pending'&&x.a.c===z)){const y=R.acts.find(x=>x.s==='pending'&&x.a.c===z);R.bad++;ring(z,'bad');const msg=`Pas ce réglage : attendu « ${T(y.a.label)} ».`;R.wrong.push({ph:cur().name,msg});show('bad','✗ '+esc(msg));counts();return}
+  if(x){x.s='ok';R.ok++;apply(x.a);ring(z,'ok');const r=q('ring_'+z);if(r&&!R.acts.some(y=>y.s==='pending'&&y.a.c===z))r.classList.remove('hint');const a=x.a;
+   if(a.say&&src!=='voice')sayQ(T(a.say,true),'pilot');
+   if(a.reply)sayQ(T(a.reply,true),'atc');
+   show('ok','✓ '+esc(T(a.label))+(a.say?`<small>« ${esc(T(a.say))} »</small>`:'')+(a.reply?`<span class="atc">${esc(a.from||'Tour')} : « ${esc(T(a.reply))} »</span>`:''),a.reply||a.say?(a.reply||'').length*70+5000:2600);
+   counts();drawCue();return}
   // animation de la commande même si l'action n'est pas attendue
   if(z==='trim')st.anim.trim=performance.now();if(z==='stick')st.anim.stick=performance.now();
   R.bad++;ring(z,'bad');
@@ -270,10 +342,23 @@ function start(block,panel,sc){
   const before=sc.phases.slice(0,R.pi+1).reverse().find(p=>(p.actions||[]).some(a=>a.c===z));
   if(later){const a=later.actions.find(a=>a.c===z);msg=`Pas maintenant. ${a.label} : en « ${later.name} ».`}
   else if(before){msg=`Pas maintenant : ${zl[z]} est déjà réglé (fait en « ${before.name} »).`}
-  R.wrong.push({ph:cur().name,msg});show('bad','✗ '+esc(msg));counts();
+  R.wrong.push({ph:cur().name,msg});show('bad','✗ '+esc(T(msg)));counts();
  }
+ /* dictée continue */
+ function micStart(){if(!SRC||MODE.mic!=='on'||!R.alive||R.rec)return;const rec=new SRC();R.rec=rec;rec.lang='fr-FR';rec.continuous=true;rec.interimResults=false;rec.maxAlternatives=1;
+  rec.onstart=()=>q('mic')&&q('mic').classList.add('on');
+  rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(!e.results[i].isFinal)continue;const t=e.results[i][0].transcript.trim();if(!t||speakingNow())continue;
+   if(q('heard'))q('heard').textContent='« '+t+' »';
+   if(R.paused){if(/reprendre|reprise|continue/i.test(t))q('sPause').click();continue}
+   if(/^\s*(pause|stop)\s*$/i.test(t)){q('sPause').click();continue}
+   const zs=parseVoice(t);if(!zs.length){show('bad','Pas compris : « '+esc(t)+' »');continue}zs.forEach(o=>tap(o.z,'voice',o.q))}};
+  rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){MODE.mic='off';show('bad','Micro refusé : autorise-le dans les réglages du navigateur.',5000);q('mic')&&(q('mic').hidden=true)}};
+  rec.onend=()=>{R.rec=null;q('mic')&&q('mic').classList.remove('on');if(R.alive&&MODE.mic==='on')setTimeout(micStart,250)};
+  try{rec.start()}catch(e){R.rec=null}}
+ function micStop(){if(R.rec){const r=R.rec;R.rec=null;r.onend=null;try{r.abort()}catch(e){}}}
+ R.micStop=micStop;
  q('stage').addEventListener('pointerdown',ev=>{const g=ev.target.closest('.zone');if(g){ev.preventDefault();tap(g.dataset.z)}});
- q('sPause').onclick=()=>{R.paused=!R.paused;q('pz').hidden=!R.paused;q('sPause').textContent=R.paused?'Reprendre':'Pause';if(R.paused&&'speechSynthesis' in window)speechSynthesis.cancel()};
+ q('sPause').onclick=()=>{R.paused=!R.paused;q('pz').hidden=!R.paused;q('sPause').textContent=R.paused?'Reprendre':'Pause';if(R.paused)hush()};
  q('sFull').onclick=()=>{const s=q('simRoot');try{(document.fullscreenElement?document.exitFullscreen():(s.requestFullscreen||s.webkitRequestFullscreen).call(s))}catch(e){}};
  q('sQuit').onclick=()=>finish(true);
  function step(dt){
@@ -282,9 +367,9 @@ function start(block,panel,sc){
   st.agl=L(R.from.agl,to.agl);st.ias=L(R.from.ias,to.ias);st.vs=L(R.from.vs,to.vs);st.pos=L(R.from.pos,to.pos);
   st.hdg=norm(R.from.hdg+angDiff(R.from.hdg,to.hdg)*f);
   st.pitch=R.hasPitch?L(R.from.pitch,to.pitch):(st.agl<1?0:clamp(2+st.vs/160,-6,10));
-  const rate=dt>0?angDiff(R.prevHdg,st.hdg)/dt:0;R.prevHdg=st.hdg;st.bank+=(clamp(rate*1.6,-25,25)-st.bank)*Math.min(1,dt*4);
+  const rate=dt>0?angDiff(R.prevHdg,st.hdg)/dt:0;R.prevHdg=st.hdg;st.bank+=((st.agl<1?0:clamp(rate*1.6,-25,25))-st.bank)*Math.min(1,dt*4);st.turn=st.agl<1?clamp(rate*1.2,-25,25):st.bank;
   const th=st.ctl.throttle,air=st.agl>1;
-  const rT=th==='plein'?2250+st.ias*(air?.8:.5):th==='palier'?2250:th==='approche'?1750:(air?1300:900);
+  let rT=th==='plein'?2250+st.ias*(air?.8:.5):th==='palier'?2250:th==='approche'?(air?1750:1800):(air?1300:1000);if(st.ctl.run===false)rT=0;if(st.rpmDrop&&performance.now()<st.rpmDrop)rT-=90;
   st.rpm+=(rT-st.rpm)*Math.min(1,dt*2);
   const pend=R.acts.filter(x=>x.s==='pending');
   if(MODE.mode==='guide'&&R.pt>2.5&&pend.length&&!R.hinted){R.hinted=true;pend.forEach(x=>{const r=q('ring_'+x.a.c);r&&r.classList.add('hint')});drawCue()}
@@ -302,10 +387,10 @@ function start(block,panel,sc){
  function finish(aborted){
   if(!R.alive)return;R.alive=false;cancelAnimationFrame(R.raf);try{R.lock&&R.lock.release()}catch(e){}
   if(R.acts)R.acts.filter(x=>x.s==='pending').forEach(x=>x.s='miss');
-  if('speechSynthesis' in window)speechSynthesis.cancel();
+  hush();micStop();
   debrief(block,sc,R,aborted);run=null;
  }
- enter(0);draw();R.raf=requestAnimationFrame(frame);
+ enter(0);draw();R.raf=requestAnimationFrame(frame);micStart();
  try{q('simRoot').scrollIntoView({block:'start'})}catch(e){}
 }
 
@@ -318,7 +403,7 @@ function debrief(block,sc,R,aborted){
  el.innerHTML=`<div><div class="eyebrow">Débrief · ${MODE.mode==='guide'?'mode guidé':'mode autonome'}</div><h1>${aborted?'Tour de piste interrompu':'Tour de piste terminé'}</h1></div>
   <div class="row" style="align-items:baseline;gap:18px"><span class="big">${p} %</span><span class="note">${ok}/${total} actions à temps · ${R.bad} erreur${R.bad>1?'s':''} de commande</span></div>
   <div class="row"><button type="button" class="primary" id="again">Recommencer</button><a class="btn" href="#/f/${block.id}">Fiche mémo</a><a class="btn ghost" href="#/m/${block.mod.id}">Autres exercices</a></div>
-  <div class="debrief">${R.log.filter(l=>l.acts.length).map(l=>`<div class="ph"><h3>${esc(l.ph.name)}</h3><ul>${l.acts.map(x=>`<li class="${x.s}"><span class="s">${x.s==='ok'?'✓':'✗'}</span><span>${esc(x.a.label)}</span>${x.s!=='ok'&&x.a.why?`<span class="why">${esc(x.a.why)}</span>`:''}</li>`).join('')}</ul></div>`).join('')}</div>
+  <div class="debrief">${R.log.filter(l=>l.acts.length).map(l=>`<div class="ph"><h3>${esc(l.ph.name)}</h3><ul>${l.acts.map(x=>`<li class="${x.s}"><span class="s">${x.s==='ok'?'✓':'✗'}</span><span>${esc(T(x.a.label))}</span>${x.s!=='ok'&&x.a.why?`<span class="why">${esc(x.a.why)}</span>`:''}</li>`).join('')}</ul></div>`).join('')}</div>
   ${R.wrong.length?`<section><h2>Commandes touchées à tort</h2><div style="height:8px"></div><div class="debrief">${R.wrong.map(w=>`<div class="ph"><span class="note">${esc(w.ph)}</span><span>${esc(w.msg)}</span></div>`).join('')}</div></section>`:''}`;
  document.getElementById('again').onclick=()=>SIM.view(block);
  window.scrollTo(0,0);
@@ -326,6 +411,6 @@ function debrief(block,sc,R,aborted){
 
 /* ---------- fiche mémo générée depuis le scénario ---------- */
 SIM.memo=function(sc,head,foot){
- return (head||'')+sc.phases.filter(p=>(p.actions||[]).length).map(p=>`<h3>${esc(p.name)}</h3><p style="margin:0 0 6px;color:var(--muted);font-size:14px">${esc(p.cue||'')}</p><ul>${p.actions.map(a=>`<li><b>${esc(a.label)}</b>${a.why?` — ${esc(a.why)}`:''}${a.say?`<br><span style="font-family:var(--f-mono);font-size:13px">« ${esc(a.say)} »</span>`:''}</li>`).join('')}</ul>`).join('')+(foot||'');
+ return (head||'')+sc.phases.filter(p=>(p.actions||[]).length).map(p=>`<h3>${esc(p.name)}</h3><p style="margin:0 0 6px;color:var(--muted);font-size:14px">${esc(T(p.cue||''))}</p><ul>${p.actions.map(a=>`<li><b>${esc(T(a.label))}</b>${a.why?` — ${esc(a.why)}`:''}${a.say?`<br><span style="font-family:var(--f-mono);font-size:13px">« ${esc(T(a.say))} »</span>`:''}${a.reply?`<br><span style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">${esc(a.from||'Tour')} : « ${esc(T(a.reply))} »</span>`:''}</li>`).join('')}</ul>`).join('')+(foot||'');
 };
 })();

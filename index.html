@@ -267,7 +267,7 @@ function render(){
  leavePractice();
  const h=location.hash.replace(/^#\/?/,'');const [kind,arg]=h.split('/');
  route=kind||'home';
- $('back').hidden=route==='home';$('voice').hidden=route!=='p'&&route!=='s';
+ $('back').hidden=route==='home';$('voice').hidden=route!=='p';
  window.scrollTo(0,0);
  if(kind==='m'&&MOD[arg])return viewModule(MOD[arg]);
  if(kind==='f'&&BLK[arg])return viewMemo(BLK[arg]);
