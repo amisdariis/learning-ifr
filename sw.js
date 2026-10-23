@@ -1,11 +1,13 @@
 // Learning IFR : cache hors ligne. Ajouter chaque nouveau fichier de modules/ dans SHELL et changer VERSION.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'learning-ifr-' + VERSION;
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
   './modules/ifr-calcul-mental.js',
-  './modules/022-instrumentation.js'
+  './modules/022-instrumentation.js',
+  './sim.js',
+  './modules/tour-de-piste.js'
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

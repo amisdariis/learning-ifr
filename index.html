@@ -175,6 +175,8 @@ const FL=f=>'FL'+String(f).padStart(3,'0');
 <!-- Contenus : un fichier par matière. Ajouter ici les nouveaux modules (et dans sw.js). -->
 <script src="modules/ifr-calcul-mental.js"></script>
 <script src="modules/022-instrumentation.js"></script>
+<script src="sim.js"></script>
+<script src="modules/tour-de-piste.js"></script>
 
 <script>
 /* ================= Programme ATPL (EASA) ================= */
@@ -265,11 +267,12 @@ function render(){
  leavePractice();
  const h=location.hash.replace(/^#\/?/,'');const [kind,arg]=h.split('/');
  route=kind||'home';
- $('back').hidden=route==='home';$('voice').hidden=route!=='p';
+ $('back').hidden=route==='home';$('voice').hidden=route!=='p'&&route!=='s';
  window.scrollTo(0,0);
  if(kind==='m'&&MOD[arg])return viewModule(MOD[arg]);
  if(kind==='f'&&BLK[arg])return viewMemo(BLK[arg]);
  if(kind==='p')return viewPractice(arg||'all');
+ if(kind==='s'&&BLK[arg]&&BLK[arg].sim)return LI.sim.view(BLK[arg]);
  viewHome();
 }
 function scoreLine(){const p=S.tot?Math.round(S.ok/S.tot*100):0;
@@ -285,7 +288,7 @@ function viewHome(){
  const byCode=Object.fromEntries(LI.modules.filter(m=>m.kind==='atpl').map(m=>[m.code,m]));
  $('view').innerHTML=`
  <div><div class="eyebrow">Préparation théorique</div><h1>Programme IFR et ATPL</h1>
-  <p class="lead">Une fiche mémo par bloc, puis l'entraînement : calcul de tête ou QCM, au clavier ou à la voix.</p></div>
+  <p class="lead">Une fiche mémo par bloc, puis l'entraînement : calcul de tête, QCM ou tour de piste sur planche de bord.</p></div>
  <div class="row">${scoreLine()}<button type="button" class="primary" id="mix">Révision mixte</button></div>
  <section><h2>Pratique</h2><div style="height:10px"></div><div class="list">${prat.map(m=>modRow(m,m.code,m.title)).join('')}</div></section>
  <section><h2>Théorie ATPL (EASA)</h2><div style="height:10px"></div><div class="list">${ATPL.map(([c,t])=>modRow(byCode[c],c,t)).join('')}</div></section>
@@ -298,12 +301,12 @@ function viewModule(m){
  $('brand').textContent=m.code+' · '+m.title;
  $('view').innerHTML=`
  <div><div class="eyebrow">${m.kind==='atpl'?'ATPL '+m.code:'Pratique'}</div><h1>${esc(m.title)}</h1><p class="lead">${esc(m.intro||'')}</p></div>
- <div class="row"><button type="button" class="primary" id="all">S'entraîner sur toute la matière</button></div>
+ ${m.blocks.some(b=>!b.sim)?`<div class="row"><button type="button" class="primary" id="all">S'entraîner sur toute la matière</button></div>`:''}
  <div class="list">${m.blocks.map(b=>{const a=acc([b.id]);return `<div class="block">
-   <div class="block-top"><div class="name">${esc(b.title)}</div><span class="meta">${a.t?a.o+'/'+a.t+' · '+a.p+' %':nItems(b)+(b.bank?' questions':' types')}</span></div>
+   <div class="block-top"><div class="name">${esc(b.title)}</div><span class="meta">${a.t?a.o+'/'+a.t+' · '+a.p+' %':b.sim?'simulateur':nItems(b)+(b.bank?' questions':' types')}</span></div>
    ${a.t?`<div class="bar"><i style="width:${a.p}%"></i></div>`:''}
-   <div class="row"><a class="btn small" href="#/f/${b.id}">Fiche mémo</a><a class="btn small primary" href="#/p/b:${b.id}">S'entraîner</a></div></div>`}).join('')}</div>`;
- $('all').onclick=()=>go('/p/m:'+m.id);
+   <div class="row"><a class="btn small" href="#/f/${b.id}">Fiche mémo</a><a class="btn small primary" href="${b.sim?'#/s/'+b.id:'#/p/b:'+b.id}">${b.sim?'Lancer':"S'entraîner"}</a></div></div>`}).join('')}</div>`;
+ if($('all'))$('all').onclick=()=>go('/p/m:'+m.id);
 }
 function viewMemo(b){
  $('brand').textContent='Fiche · '+b.title;
@@ -311,7 +314,7 @@ function viewMemo(b){
  <div><div class="eyebrow">${b.mod.kind==='atpl'?'ATPL '+b.mod.code+' · ':''}${esc(b.mod.title)}</div><h1>${esc(b.title)}</h1></div>
  <article class="memo">${b.memo||'<p>Fiche à rédiger.</p>'}</article>
  <div class="row"><button type="button" class="primary" id="train">S'entraîner sur ce bloc</button><a class="btn ghost" href="#/m/${b.mod.id}">Tous les blocs de la matière</a></div>`;
- $('train').onclick=()=>go('/p/b:'+b.id);
+ $('train').onclick=()=>go(b.sim?'/s/'+b.id:'/p/b:'+b.id);
 }
 
 /* ================= Entraînement ================= */
@@ -455,7 +458,7 @@ function setVoice(on){
   if(phase==='verdict')nextQ();else{clearInterval(tick);ask()}
  }else{clearTimeout(autoT);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();note('');if(route==='p'&&phase==='ask'&&!done)startTimer()}
 }
-function leavePractice(){clearTimeout(autoT);clearInterval(tick);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();phase='idle'}
+function leavePractice(){LI.sim&&LI.sim.stop();clearTimeout(autoT);clearInterval(tick);stopListen();if('speechSynthesis' in window)speechSynthesis.cancel();phase='idle'}
 
 /* ================= Navigation, clavier, installation ================= */
 $('back').onclick=()=>{if(history.length>1)history.back();else go('/')};
