@@ -49,6 +49,9 @@ SIM.registerPanel({
   {type:'label',x:410,y:362,text:'ÉLECTRICITÉ'}
  ]});
 
+/* éléments attendus dans les messages dictés (ordre libre) */
+const I=(l,re)=>({l,re}),N=(l,num)=>({l,num}),CS={l:'indicatif',cs:'any'},CSF={l:'indicatif complet',cs:'full'};
+const RW=N('piste '+AD.rwy,AD.rwy),STN=I(AD.station,/las ?bordes/);
 const magCheck=(ctl,st)=>{ctl.mags='G';st.rpmDrop=performance.now()+800;
  setTimeout(()=>{ctl.mags='D';st.rpmDrop=performance.now()+800},900);setTimeout(()=>{ctl.mags='2'},1800)};
 const ATIS=`Lasbordes, information ${AD.info}. Piste en service ${AD.rwy}. Vent ${AD.wind}. CAVOK. Température 15, point de rosée 8. QNH ${AD.qnh}. Accusez réception de l'information ${AD.info} au premier contact.`;
@@ -80,8 +83,9 @@ const W={
   actions:[
    {c:'radio',label:'Demande de roulage',fx:c=>c.freq=AD.twr,
     say:`${AD.station}, {CS}, DR400 au ${AD.parking}, deux personnes à bord, pour un tour de piste, avec l'information ${AD.info}, demandons à rouler.`,
-    reply:`{cs}, roulez ${AD.hold}, QNH ${AD.qnh}, rappelez prêt.`},
-   {c:'radio',label:'Collationner',say:`Roulons ${AD.hold}, QNH ${AD.qnh}, rappellerons prêts, {cs}.`,why:'Toute autorisation de roulage se collationne.'},
+    reply:`{cs}, roulez ${AD.hold}, QNH ${AD.qnh}, rappelez prêt.`,
+    items:[STN,CSF,I('type (DR400)',/dr ?400|d r 400|robin/),I('position (parking)',/parking/),I('personnes à bord',/personnes?/),I('intention (tour de piste)',/tours? de piste/),I(`information ${AD.info}`,/alpha/),I('demande de roulage',/roul/)]},
+   {c:'radio',label:'Collationner',say:`Roulons ${AD.hold}, QNH ${AD.qnh}, rappellerons prêts, {cs}.`,items:[I('roulons',/roul/),I("point d'attente",/attente/),RW,N('QNH '+AD.qnh,String(AD.qnh)),I('rappel prêt',/pr[eê]ts?/),CS],why:'Toute autorisation de roulage se collationne.'},
    {c:'xpdr',set:'ALT',label:'Transpondeur ALT',why:'Selon la consigne locale : beaucoup de terrains le demandent dès le roulage.'}]},
  taxi:{id:'taxi',name:'Roulage',leg:'Roulage',cue:`Roulage vers le ${AD.hold}. Freins et instruments en virage.`,dur:14,to:{pos:2,ias:0,hdg:240},
   actions:[
@@ -109,8 +113,8 @@ const W={
    {c:'mixture',check:'riche',label:'Mélange plein riche (vérifier)'},
    {c:'lights',set:true,label:'Phares ON',why:'Être vu au décollage et en montée initiale.'},
    {c:'radio',label:'Annonce « prêt »',say:`{cs}, prêts au ${AD.hold}, pour un tour de piste.`,
-    reply:`{cs}, alignez-vous piste ${AD.rwy}, autorisé décollage, vent ${AD.wind}.`},
-   {c:'radio',label:'Collationner',say:`Nous nous alignons et décollons piste ${AD.rwy}, {cs}.`}]},
+    reply:`{cs}, alignez-vous piste ${AD.rwy}, autorisé décollage, vent ${AD.wind}.`,items:[CS,I('prêt',/pr[eê]ts?/),I("point d'attente",/attente/),RW]},
+   {c:'radio',label:'Collationner',say:`Nous nous alignons et décollons piste ${AD.rwy}, {cs}.`,items:[I('alignement',/align/),I('décollage',/d[ée]coll/),RW,CS]}]},
  align:{id:'align',name:'Alignement',leg:'Piste 33',cue:'Aligné sur l\'axe, frein desserré, plein gaz.',dur:4,to:{pos:3,hdg:330},win:12,
   actions:[
    {c:'brake',set:'libre',label:'Frein de parc desserré'},
@@ -137,8 +141,8 @@ const W={
    {c:'trim',label:'Compenser',why:'Avion compensé en palier : tu as les mains libres pour la check-list.'}]},
  dw:{id:'dw',name:'Vent arrière',leg:'Vent arrière',cue:'Report vent arrière, puis check-list pré-atterrissage.',dur:14,to:{pos:10,ias:170},win:20,
   actions:[
-   {c:'radio',label:'Report vent arrière',say:`{cs}, vent arrière piste ${AD.rwy} pour un complet.`,reply:'{cs}, numéro un, rappelez en finale.',why:'Le contrôleur te séquence dans le circuit.'},
-   {c:'radio',label:'Collationner',say:'Numéro un, rappellerons en finale, {cs}.'},
+   {c:'radio',label:'Report vent arrière',say:`{cs}, vent arrière piste ${AD.rwy} pour un complet.`,reply:'{cs}, numéro un, rappelez en finale.',items:[CS,I('vent arrière',/vent arri[eè]re/),RW,I('intention (complet)',/complet|toucher|touch/)],why:'Le contrôleur te séquence dans le circuit.'},
+   {c:'radio',label:'Collationner',say:'Numéro un, rappellerons en finale, {cs}.',items:[I('numéro un',/num[ée]ro (un|1)\b|n° ?1/),I('rappel finale',/finale/),CS]},
    {c:'pump',set:true,label:'Pompe électrique ON',why:"Secours pour l'approche et une éventuelle remise de gaz."},
    {c:'carb',set:'chaud',label:'Réchauffage carbu chaud',why:'Avant la réduction : le givrage carburateur menace à faible puissance.'},
    {c:'mixture',check:'riche',label:'Mélange plein riche (vérifier)'},
@@ -153,8 +157,8 @@ const W={
   actions:[{c:'vsi',check:true,label:'Taux de descente (vérifier)',why:'Environ 400 à 500 ft/min pour arriver en finale vers 500 ft sol.'}]},
  final:{id:'final',name:'Finale',leg:'Finale',cue:'Aligné en finale, plan de descente stabilisé.',dur:12,to:{pos:14.6,hdg:330,agl:300,ias:130,vs:-450},win:16,
   actions:[
-   {c:'radio',label:'Report finale',say:`{cs}, finale piste ${AD.rwy}.`,reply:`{cs}, piste ${AD.rwy}, autorisé atterrissage, vent ${AD.wind}.`},
-   {c:'radio',label:'Collationner',say:`Autorisés atterrissage piste ${AD.rwy}, {cs}.`},
+   {c:'radio',label:'Report finale',say:`{cs}, finale piste ${AD.rwy}.`,reply:`{cs}, piste ${AD.rwy}, autorisé atterrissage, vent ${AD.wind}.`,items:[CS,I('finale',/finale/),RW]},
+   {c:'radio',label:'Collationner',say:`Autorisés atterrissage piste ${AD.rwy}, {cs}.`,items:[I('autorisé',/autoris/),I('atterrissage',/atterr/),RW,CS]},
    {c:'flaps',set:2,label:'Volets atterrissage',why:'Configuration finale : plus de traînée, pente plus forte.'},
    {c:'asi',check:true,label:'Vitesse finale 130 km/h (vérifier)',why:'Approche stabilisée : la vitesse est tenue au plus près.'},
    {c:'trim',label:'Compenser'}]},
@@ -167,8 +171,8 @@ const W={
  /* ---- retour au parking ---- */
  roll2:{id:'roll2',name:"Après l'atterrissage",leg:'Dégagement',cue:'Posé. Freinage, piste dégagée : report et check-list après atterrissage.',dur:10,to:{pos:17,ias:15,vs:0,pitch:0},win:22,
   actions:[
-   {c:'radio',label:'Report « piste dégagée »',say:'{cs}, piste dégagée.',reply:`{cs}, roulez ${AD.parking}, au revoir.`},
-   {c:'radio',label:'Collationner',say:`Roulons ${AD.parking}, {cs}, au revoir.`},
+   {c:'radio',label:'Report « piste dégagée »',say:'{cs}, piste dégagée.',reply:`{cs}, roulez ${AD.parking}, au revoir.`,items:[CS,I('piste dégagée',/d[ée]gag/)]},
+   {c:'radio',label:'Collationner',say:`Roulons ${AD.parking}, {cs}, au revoir.`,items:[I('roulons',/roul/),I('parking',/parking/),CS]},
    {c:'flaps',set:0,label:'Volets rentrés'},
    {c:'pump',set:false,label:'Pompe électrique OFF'},
    {c:'lights',set:false,label:'Phares OFF'},
@@ -198,8 +202,8 @@ const GA=[
  {id:'ga2',name:'Montée après remise de gaz',leg:'Montée',cue:'Vario positif, 130 km/h, 300 ft au-dessus du sol.',dur:9,to:{pos:17,agl:650,ias:140,vs:600},win:18,
   actions:[
    {c:'flaps',set:0,label:'Volets rentrés',why:'Vitesse et hauteur suffisantes : configuration lisse.'},
-   {c:'radio',label:'Report remise de gaz',say:'{cs}, remise de gaz.',reply:'{cs}, reçu, rappelez vent arrière.'},
-   {c:'radio',label:'Collationner',say:'Rappellerons vent arrière, {cs}.'},
+   {c:'radio',label:'Report remise de gaz',say:'{cs}, remise de gaz.',reply:'{cs}, reçu, rappelez vent arrière.',items:[CS,I('remise de gaz',/remise (de|des) gaz/)]},
+   {c:'radio',label:'Collationner',say:'Rappellerons vent arrière, {cs}.',items:[I('rappel vent arrière',/vent arri[eè]re/),CS]},
    {c:'trim',label:'Compenser'}]}
 ];
 

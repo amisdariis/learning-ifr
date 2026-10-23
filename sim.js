@@ -319,6 +319,7 @@ SIM.avDialog=avDialog;
 /* ---------- dictée des commandes ---------- */
 const VOC=[ // ordre = priorité ; le texte reconnu est masqué au fur et à mesure
  ['fuelP',/pression (d'|d |de l')?(essence|carburant)/],['oilP',/pression (d'|d |de l')?huile|pressions?/],['oilT',/temp[ée]ratures? (d'|d |de l')?huile|temp[ée]ratures?/],
+ ['throttle',/r[ée]gime (de )?(mille|\d+|[a-z]+ cents?)( tours?)?/],
  ['tach',/compte[- ]?tours?|tours? moteur|r[ée]gime|tours? minute/],
  ['throttle',/pleins? gaz|gaz|r[ée]duc\w*|r[ée]dui\w*|puissance|manette|ralenti/],
  ['flaps',/volets?|cran/],['carb',/r[ée]chauf\w*|carbu(?!rant)\w*/],['mixture',/m[ée]lange|richesse|[ée]touffoir/],
@@ -346,6 +347,25 @@ function qual(z,g){
  return null}
 function qualOk(a,q){if(q==null||a.set===undefined)return true;if(a.c==='throttle')return q==='plein'?a.set==='plein':a.set!=='plein';return a.set===q}
 SIM.parseVoice=parseVoice;
+
+/* ---------- vérification des messages radio dictés ---------- */
+const ICAOREV=Object.fromEntries(Object.entries(ICAO).map(([k,v])=>[v.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace('-',''),k.toLowerCase()]));
+const deacc=t=>t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+function letterStream(t){return deacc(t).replace(/x-ray/g,'xray').replace(/[a-z]+/g,w=>ICAOREV[w]||w).replace(/[^a-z]/g,'')}
+const NW={zero:0,un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,treize:13,quatorze:14,quinze:15,seize:16,vingt:20,vingts:20,trente:30,quarante:40,cinquante:50,soixante:60,cent:100,cents:100,mille:1000};
+function wordsN(ws){let tot=0,c=0,last=null;for(const w of ws){const n=NW[w];if(n===100)c=(c||1)*100;else if(n===1000){tot+=(c||1)*1000;c=0}else if(n===20&&last===4)c+=76;else c+=n;last=n}return tot+c}
+function numGroups(t){const tk=deacc(t).replace(/[-,.'’]/g,' ').split(/\s+/).filter(Boolean),out=[];let i=0;
+ while(i<tk.length){const w=tk[i];
+  if(/^\d+$/.test(w)){out.push(w);i++;continue}
+  if(w in NW){const ws=[];while(i<tk.length&&(tk[i] in NW||(tk[i]==='et'&&tk[i+1] in NW))){if(tk[i]!=='et')ws.push(tk[i]);i++}
+   out.push(ws.length>1&&ws.every(x=>NW[x]<=9)?ws.map(x=>NW[x]).join(''):String(wordsN(ws)));continue}
+  out.push('|');i++}
+ return out.join('').split('|').filter(Boolean)}
+function csHeard(t,mode){const L=letterStream(t),full=cs().replace('-','').toLowerCase(),sh=csShort().replace('-','').toLowerCase();return L.includes(full)||(mode!=='full'&&L.includes(sh))}
+function itemOk(it,t){if(it.cs)return csHeard(t,it.cs);if(it.num)return numGroups(t).some(g=>g.includes(it.num));return it.re.test(t.toLowerCase())}
+function radioCheck(a,t){return(a.items||[]).filter(it=>!itemOk(it,t))}
+const RADIOLIKE=/las ?bordes|vent arri|finale|d[ée]gag|pr[eê]ts?\b|roul|align|autoris|num[ée]ro|rappel|remise|d[ée]coll|atterr|qnh|parking|attente/;
+SIM.radioCheck=(items,t)=>items.filter(it=>!itemOk(it,t)).map(it=>it.l);SIM.numGroups=numGroups;SIM.letterStream=letterStream;
 
 /* ---------- moteur ---------- */
 let run=null;
@@ -431,12 +451,12 @@ function start(block,panel,sc){
  }
  function drawCue(){const ph=cur();if(!ph)return;
   if(MODE.mode==='guide'){const pend=R.acts.filter(x=>x.s==='pending');
-   cue.innerHTML=`<b>${esc(ph.name)}</b>${esc(T(ph.cue||''))}${R.pt>2.5&&pend.length?`<div class="todo">À faire : ${pend.map(x=>esc(T(x.a.label))).join(' · ')}</div>`:''}`}
+   cue.innerHTML=`<b>${esc(ph.name)}</b>${esc(T(ph.cue||''))}${R.pt>2.5&&pend.length?`<div class="todo">À faire : ${pend.map(x=>esc(T(x.a.label))+(x.a.items&&MODE.mic==='on'?' ('+esc(x.a.items.map(i=>i.l).join(', '))+')':'')).join(' · ')}</div>`:''}`}
   else cue.innerHTML=`<b>${esc(ph.leg||'')}</b>`;
   if(MODE.mode==='guide'){const c=q('fsCard');c.classList.toggle('min',fsMin);
    const nOk=R.acts.filter(x=>x.s==='ok').length,pend=R.acts.filter(x=>x.s!=='ok');
    c.innerHTML=`<button type="button" class="fs-h" id="fsH" aria-expanded="${!fsMin}"><span>${esc(ph.name)}</span><span>${R.acts.length?nOk+'/'+R.acts.length+' ':''}${fsMin?'▸':'▾'}</span></button><div class="fs-cue">${esc(T(ph.cue||''))}</div>
-    <ul>${pend.map(x=>`<li class="${R.pt>2.5?'todo':''}"><span>·</span><span>${esc(T(x.a.label))}</span></li>`).join('')}</ul>`;
+    <ul>${pend.map(x=>`<li class="${R.pt>2.5?'todo':''}"><span>·</span><span>${esc(T(x.a.label))}${x.a.items&&MODE.mic==='on'?`<br><small style="color:#AFC0CC">${esc(x.a.items.map(i=>i.l).join(' · '))}</small>`:''}</span></li>`).join('')}</ul>`;
    q('fsH').onclick=()=>{fsMin=!fsMin;drawCue()}}}
  function apply(a){if(a.set!==undefined)st.ctl[a.c]=a.set;if(a.fx)a.fx(st.ctl,st);if(a.c==='trim')st.anim.trim=performance.now();if(a.c==='stick')st.anim.stick=performance.now();if(a.c==='radio')st.anim.tx=performance.now()+1600}
  function tap(z,src,qv){
@@ -465,10 +485,24 @@ function start(block,panel,sc){
    heard('« '+t+' »');
    if(R.paused){if(/reprendre|reprise|continue/i.test(t))q('sPause').click();continue}
    if(/^\s*(pause|stop)\s*$/i.test(t)){q('sPause').click();continue}
-   const zs=parseVoice(t);if(!zs.length){show('bad','Pas compris : « '+esc(t)+' »');continue}zs.forEach(o=>tap(o.z,'voice',o.q))}};
+   const rp=R.acts&&R.acts.find(x=>x.s==='pending'&&x.a.c==='radio'&&x.a.items);
+   if(rp&&(csHeard(t,'any')||RADIOLIKE.test(t.toLowerCase()))){radioVoice(rp,t);continue}
+   const zs=parseVoice(t);if(!zs.length){show('bad','Pas compris : « '+esc(t)+' »');continue}
+   if(rp&&zs.length===1&&zs[0].z==='radio'){show('miss','Dicte ton message complet : '+esc(rp.a.items.map(i=>i.l).join(' · ')),6000);continue}
+   zs.forEach(o=>tap(o.z,'voice',o.q))}};
   rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){MODE.mic='off';saveAV({mic:null});q('mic')&&(q('mic').hidden=true);if(!R.paused)q('sPause').click();avDialog(null,'Le micro est bloqué : les commandes vocales sont coupées. Autorise-le, puis relance le tour de piste.')}};
   rec.onend=()=>{R.rec=null;micUI(false);if(R.alive&&MODE.mic==='on')setTimeout(micStart,250)};
   try{rec.start()}catch(e){R.rec=null}}
+ function radioVoice(x,t){
+  const miss=radioCheck(x.a,t);
+  if(!miss.length){x.a.heard=t;tap('radio','voice');return}
+  R.bad++;ring('radio','bad');x.tries=(x.tries||0)+1;
+  const ml=miss.map(i=>i.l).join(', ');const msg=`${T(x.a.label)} incomplet : manque ${ml}.`;
+  R.wrong.push({ph:cur().name,msg:msg+' Dit : « '+t+' »'});
+  const noCs=miss.some(i=>i.cs);
+  const atc=noCs?`Station appelant ${(x.a.items.find(i=>i.re&&/bordes/.test(i.re.source))?'Lasbordes':'')}, répétez votre indicatif.`:x.a.reply?'{cs}, répétez votre message.':'{cs}, collationnez l\'autorisation complète.';
+  sayQ(T(atc,true),'atc');
+  show('bad','✗ '+esc(msg)+`<span class="atc">Tour : « ${esc(T(atc))} »</span>`,7000);counts()}
  function micUI(on){const m=q('mic'),f=q('fsMic');m&&m.classList.toggle('on',on);f&&f.classList.toggle('on',on);if(q('micSt'))q('micSt').textContent=on?'À l\'écoute':'Micro en attente';if(!on&&q('fsHeard')&&!q('fsHeard').dataset.t)q('fsHeard').textContent='Micro en attente'}
  function heard(t){if(q('heard'))q('heard').textContent=t;const f=q('fsHeard');if(f){f.textContent=t;f.dataset.t='1'}}
  const relisten=()=>{micStop();micStart()};
@@ -536,6 +570,6 @@ function debrief(block,sc,R,aborted){
 
 /* ---------- fiche mémo générée depuis le scénario ---------- */
 SIM.memo=function(sc,head,foot){
- return (head||'')+sc.phases.filter(p=>(p.actions||[]).length).map(p=>`<h3>${esc(p.name)}</h3><p style="margin:0 0 6px;color:var(--muted);font-size:14px">${esc(T(p.cue||''))}</p><ul>${p.actions.map(a=>`<li><b>${esc(T(a.label))}</b>${a.why?` — ${esc(a.why)}`:''}${a.say?`<br><span style="font-family:var(--f-mono);font-size:13px">« ${esc(T(a.say))} »</span>`:''}${a.reply?`<br><span style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">${esc(a.from||'Tour')} : « ${esc(T(a.reply))} »</span>`:''}</li>`).join('')}</ul>`).join('')+(foot||'');
+ return (head||'')+sc.phases.filter(p=>(p.actions||[]).length).map(p=>`<h3>${esc(p.name)}</h3><p style="margin:0 0 6px;color:var(--muted);font-size:14px">${esc(T(p.cue||''))}</p><ul>${p.actions.map(a=>`<li><b>${esc(T(a.label))}</b>${a.why?` — ${esc(a.why)}`:''}${a.say?`<br><span style="font-family:var(--f-mono);font-size:13px">« ${esc(T(a.say))} »</span>`:''}${a.items?`<br><span style="font-size:13px;color:var(--muted)">Éléments attendus : ${esc(a.items.map(i=>i.l).join(' · '))}</span>`:''}${a.reply?`<br><span style="font-family:var(--f-mono);font-size:13px;color:var(--muted)">${esc(a.from||'Tour')} : « ${esc(T(a.reply))} »</span>`:''}</li>`).join('')}</ul>`).join('')+(foot||'');
 };
 })();
