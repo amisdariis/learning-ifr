@@ -195,6 +195,14 @@ memo:`
 <dl>
 <dt>120 NM</dt><dd>2 NM</dd><dt>60 NM</dt><dd>1 NM</dd><dt>30 NM</dt><dd>1/2 NM</dd><dt>15 NM</dt><dd>1/4 NM</dd>
 </dl>
+<h3>En temps de vol</h3>
+<dl><dt>Même règle</dt><dd>1° d'erreur = 1 s d'écart par minute de vol (sans vent)</dd>
+<dt>Exemple</dt><dd>4° pendant 3 min → 12 s de vol à côté de la route</dd></dl>
+<h3>Radar météo : hauteur des nuages</h3>
+<dl><dt>Principe</dt><dd>1° de site à 60 NM = 1 NM ≈ 6000 ft, donc 1° à 1 NM ≈ 100 ft</dd>
+<dt>Formule</dt><dd>hauteur (ft) ≈ 100 × distance (NM) × site (°)</dd>
+<dt>Tableau pour 1°</dt><dd>1 NM 100 ft · 10 NM 1000 ft · 20 NM 2000 ft</dd>
+<dt>Exemple</dt><dd>site 5° à 10 NM → 5000 ft au-dessus du niveau de l'avion</dd></dl>
 <h3>Pourquoi</h3>
 <ul><li>d = L × tan α, et pour un petit angle tan α ≈ α (rad) ≈ α° ÷ 60.</li>
 <li>Valable pour des erreurs faibles, typiquement moins de 20°.</li></ul>`,
@@ -205,6 +213,12 @@ gens:[
 ()=>{const al=P([2,3,4,5,6,8,10,12]),L=P([10,15,20,30,40,60]),d=L*al/60;return{t:'Erreur de route',ro:[['Écart',fmt(d)+' NM'],['Distance',L+' NM']],
  q:`Après ${L} NM, tu es à ${fmt(d)} NM à côté de ta route. Quelle est ton erreur de route ?`,u:'°',a:al,ok:near(.6),
  s:['α ≈ 60 × d ÷ L',`60 × ${fmt(d)} = ${fmt(60*d)}`,`${fmt(60*d)} ÷ ${L} = <b>${al}°</b>`],tip:'Retourne la règle du 1 pour 60.'}},
+()=>{const al=P([1,2,3,4,5,6]),t=P([2,3,4,5,6,8,10]),a=al*t;return{t:'Écart en temps de vol',ro:[['Erreur',al+'°'],['Vol',t+' min']],
+ q:`Tu voles ${t} min avec ${al}° d'erreur de route, sans vent. Combien de secondes de vol représente ton écart latéral ?`,u:'s',a,ok:near(1),
+ s:["1° d'erreur = 1 s d'écart par minute de vol",`${al} × ${t} = <b>${a} s</b>`],tip:'La règle du 1 pour 60 marche aussi en temps : 1/60 min = 1 s.'}},
+()=>{const tl=P([1,2,3,4,5,6,8]),D=P([5,10,15,20,25,30,40]),a=100*D*tl;return{t:'Radar : hauteur des nuages',ro:[['Site',tl+'°'],['Distance',D+' NM']],
+ q:`Au radar météo, un écho disparaît avec un site (tilt) de ${tl}° à ${D} NM. À quelle hauteur au-dessus de ton niveau se trouve le sommet ?`,u:'ft',a,ok:pct(.05,50),
+ s:['1° de site ≈ 100 ft par NM de distance',`100 × ${D} = ${100*D} ft pour 1°`,`${100*D} × ${tl} = <b>${a} ft</b>`],tip:'1° à 60 NM = 1 NM ≈ 6000 ft, donc 100 ft par NM.'}},
 ()=>{const L=P([15,30,60,120]),a=L/60;return{t:'Écart pour 1°',ro:[['Erreur','1°'],['Distance',L+' NM']],
  q:`Quel écart latéral produit une erreur de route de 1° après ${L} NM ?`,u:'NM',a,ok:near(.05),
  s:['d ≈ L × 1 ÷ 60',`${L} ÷ 60 = <b>${fmt(a)} NM</b>`],tip:'120 NM → 2 · 60 → 1 · 30 → 1/2 · 15 → 1/4.'}}
