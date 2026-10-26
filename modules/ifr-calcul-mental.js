@@ -121,35 +121,93 @@ gens:[
  s:[`Fb = Tsv ÷ D = ${fmt(t)} ÷ ${d} = ${fmt(fb)}`,`Vp = 60 ÷ Fb = 60 ÷ ${fmt(fb)} = <b>${v} kt</b>`],tip:'Ou directement : Vp = D ÷ T × 60.'}}
 ]},
 /* ------------------------------------------------------------------ */
-{id:'virages', title:'Virages',
+{id:'virages', title:'Virages au taux 1',
 memo:`
-<h3>Inclinaison au taux 1</h3>
+<h3>Taux 1</h3>
 <dl>
-<dt>Formule</dt><dd>VP ÷ 10 + 7 (en degrés)</dd>
-<dt>Variante</dt><dd>≈ 15 % de la VP</dd>
-<dt>Exemples</dt><dd>100 kt → 17° · 120 kt → 19° · 150 kt → 22°</dd>
+<dt>Taux</dt><dd>3°/s, 360° en 2 min</dd>
+<dt>Durée</dt><dd>angle ÷ 3 secondes (030 → 090 : 60° en 20 s)</dd>
+</dl>
+<h3>Inclinaison</h3>
+<dl>
+<dt>Règle</dt><dd>≈ 15 % de la Vp (kt)</dd>
+<dt>Calcul de tête</dt><dd>10 % de Vp + la moitié de ce résultat (120 kt : 12 + 6 = 18°)</dd>
+<dt>Variante</dt><dd>Vp ÷ 10 + 7</dd>
+<dt>Tableau</dt><dd>60 kt 9° · 80 kt 12° · 100 kt 15° · 120 kt 18° · 140 kt 21° · 160 kt 24°</dd>
+</dl>
+<h3>Rayon de virage</h3>
+<dl>
+<dt>En mètres</dt><dd>R ≈ 10 × Vp (kt) (120 kt → 1200 m)</dd>
+<dt>En NM</dt><dd>R ≈ Vp ÷ 200 (120 kt → 0,6 NM)</dd>
+<dt>Repère</dt><dd>le rayon vaut environ 20 s de vol</dd>
+</dl>
+<h3>Longueur d'un arc</h3>
+<dl>
+<dt>Formule</dt><dd>L ≈ R × α ÷ 60 (α en degrés, 1 rad ≈ 60°)</dd>
+<dt>Tableau</dt><dd>60° R · 90° 3/2 R · 120° 2 R · 150° 5/2 R · 180° 3 R · 240° 4 R</dd>
 </dl>
 <h3>Sortie de virage</h3>
 <dl>
-<dt>Anticipation</dt><dd>inclinaison ÷ 2, en degrés de cap</dd>
+<dt>Anticipation</dt><dd>inclinaison ÷ 2, en degrés de cap (20° → 10° avant)</dd>
 <dt>Virage à droite</dt><dd>cap visé − anticipation</dd>
 <dt>Virage à gauche</dt><dd>cap visé + anticipation</dd>
 </dl>
 <h3>Pièges</h3>
-<ul><li>L'inclinaison se calcule avec la <b>vitesse propre</b> (le taux de virage dépend de l'air, pas du sol).</li>
-<li>Au-delà de 25 à 30° on limite l'inclinaison même si le taux 1 en demanderait plus.</li></ul>`,
+<ul><li>Inclinaison et rayon se calculent avec la <b>vitesse propre</b> : le taux de virage dépend de l'air, pas du sol.</li>
+<li>Au-delà de 25 à 30°, on limite l'inclinaison même si le taux 1 en demanderait plus.</li></ul>`,
 gens:[
-()=>{const v=R(80,180,10),a=v/10+7;return{t:'Inclinaison taux 1',ro:[['VP',v+' kt']],
+()=>{const v=R(60,180,10),a=v*.15,d=v/10;return{t:'Inclinaison taux 1',ro:[['Vp',v+' kt']],
  q:`Quelle inclinaison pour un virage au taux standard à ${v} kt de vitesse propre ?`,u:'°',a,
- ok:x=>Math.abs(x-a)<=2||Math.abs(x-v*.15)<=1,
- s:['Règle : VP ÷ 10 + 7',`${v} ÷ 10 = ${v/10}`,`${v/10} + 7 = <b>${a}°</b>`],
- tip:`Variante acceptée : 15 % de VP = ${fmt(v*.15)}°.`}},
-()=>{const b=P([10,14,18,20,24,26,30]),tg=R(1,36)*10,dr=P(['droite','gauche']),a=dr==='droite'?tg-b/2:tg+b/2;
+ ok:x=>Math.abs(x-a)<=1.5||Math.abs(x-(v/10+7))<=1,
+ s:['Règle : 15 % de Vp = 10 % + 5 %',`10 % de ${v} = ${fmt(d)}`,`moitié : ${fmt(d/2)}`,`${fmt(d)} + ${fmt(d/2)} = <b>${fmt(a)}°</b>`],
+ tip:`Variante acceptée : Vp ÷ 10 + 7 = ${fmt(v/10+7)}°.`}},
+()=>{const d=P([30,45,60,90,120,135,180,225,270,360]),a=d/3;return{t:'Durée de virage',ro:[['Virage',d+'°']],
+ q:`Combien de secondes pour changer de cap de ${d}° au taux 1 ?`,u:'s',a,ok:near(1),
+ s:['Taux 1 = 3° par seconde',`${d} ÷ 3 = <b>${a} s</b>`],tip:'360° en 2 min, 180° en 1 min, 90° en 30 s.'}},
+()=>{const v=R(80,250,10),m=Math.random()<.5,a=m?10*v:v/200;return{t:'Rayon de virage',ro:[['Vp',v+' kt']],
+ q:`Quel est le rayon d'un virage au taux 1 à ${v} kt, en ${m?'mètres':'NM'} ?`,u:m?'m':'NM',a,ok:m?pct(.05,30):near(.05),
+ s:m?['R (m) ≈ 10 × Vp',`10 × ${v} = <b>${a} m</b>`]:['R (NM) ≈ Vp ÷ 200',`${v} ÷ 200 = <b>${fmt(a)} NM</b>`],
+ tip:'Le rayon correspond à environ 20 s de vol à cette vitesse.'}},
+()=>{const al=P([60,90,120,150,180,210,240]),r=P([.5,.6,.7,.8,1,1.2,2,3]),a=r*al/60;return{t:"Longueur d'un arc",ro:[['Rayon',fmt(r)+' NM'],['Angle',al+'°']],
+ q:`Quelle distance parcours-tu sur un arc de ${al}° de rayon ${fmt(r)} NM ?`,u:'NM',a,ok:pct(.05,.05),
+ s:['L ≈ R × α ÷ 60',`${al} ÷ 60 = ${fmt(al/60)}`,`${fmt(r)} × ${fmt(al/60)} = <b>${fmt(a)} NM</b>`],tip:'Un radian vaut environ 60° : sur 60°, l\'arc mesure un rayon.'}},
+()=>{const v=P([100,120,140,160,180,200,240]),al=P([90,180,270]),r=v/200,a=r*al/60;return{t:'Distance parcourue en virage',ro:[['Vp',v+' kt'],['Virage',al+'°']],
+ q:`Virage de ${al}° au taux 1 à ${v} kt : quelle distance parcours-tu sur l'arc ?`,u:'NM',a,ok:pct(.06,.05),
+ s:[`Rayon ≈ ${v} ÷ 200 = ${fmt(r)} NM`,`L ≈ R × α ÷ 60 = ${fmt(r)} × ${al/60}`,`= <b>${fmt(a)} NM</b>`],
+ tip:`Vérification : ${al}° au taux 1 = ${al/3} s, à ${fmt(v/60)} NM/min ≈ ${fmt(v/60*al/180)} NM.`}},
+()=>{const b=P([10,14,16,18,20,24,26,30]),tg=R(1,36)*10,dr=P(['droite','gauche']),a=dr==='droite'?tg-b/2:tg+b/2;
  return{t:'Sortie de virage',ro:[['Inclinaison',b+'°'],['Cap visé',H(tg)],['Virage',dr]],
  q:`Virage à ${dr} incliné à ${b}° pour rejoindre le cap ${H(tg)}. À quel cap commences-tu à redresser ?`,u:'cap',a,hdg:true,
  ok:x=>Math.abs(((x-a+540)%360)-180)<=1,
  s:[`Anticipation = inclinaison ÷ 2 = ${b/2}°`,`Virage à ${dr} : le cap ${dr==='droite'?'augmente':'diminue'}, tu redresses ${b/2}° avant d'y être`,`${H(tg)} ${dr==='droite'?'−':'+'} ${b/2} = <b>${H(a)}</b>`],
  tip:'Sans anticipation tu dépasses le cap et tu oscilles.'}}
+]},
+/* ------------------------------------------------------------------ */
+{id:'ecart-route', title:'Écart latéral de route',
+memo:`
+<h3>Règle du 1 pour 60</h3>
+<dl>
+<dt>Écart latéral</dt><dd>d ≈ L × α ÷ 60 (α en degrés, petits angles)</dd>
+<dt>Erreur de route</dt><dd>α ≈ 60 × d ÷ L</dd>
+<dt>À retenir</dt><dd>1° d'erreur = 1 NM d'écart à 60 NM</dd>
+</dl>
+<h3>Écart pour 1° d'erreur</h3>
+<dl>
+<dt>120 NM</dt><dd>2 NM</dd><dt>60 NM</dt><dd>1 NM</dd><dt>30 NM</dt><dd>1/2 NM</dd><dt>15 NM</dt><dd>1/4 NM</dd>
+</dl>
+<h3>Pourquoi</h3>
+<ul><li>d = L × tan α, et pour un petit angle tan α ≈ α (rad) ≈ α° ÷ 60.</li>
+<li>Valable pour des erreurs faibles, typiquement moins de 20°.</li></ul>`,
+gens:[
+()=>{const al=P([1,2,3,4,5,6,8,10]),L=P([15,20,30,40,45,60,90,120]),a=L*al/60;return{t:'Écart latéral',ro:[['Erreur',al+'°'],['Distance',L+' NM']],
+ q:`Erreur de route de ${al}° depuis le repère. Après ${L} NM, quel est ton écart latéral ?`,u:'NM',a,ok:pct(.05,.1),
+ s:['d ≈ L × α ÷ 60',`${L} ÷ 60 = ${fmt(L/60)}`,`${fmt(L/60)} × ${al} = <b>${fmt(a)} NM</b>`],tip:'1° d\'erreur, 1 NM d\'écart à 60 NM.'}},
+()=>{const al=P([2,3,4,5,6,8,10,12]),L=P([10,15,20,30,40,60]),d=L*al/60;return{t:'Erreur de route',ro:[['Écart',fmt(d)+' NM'],['Distance',L+' NM']],
+ q:`Après ${L} NM, tu es à ${fmt(d)} NM à côté de ta route. Quelle est ton erreur de route ?`,u:'°',a:al,ok:near(.6),
+ s:['α ≈ 60 × d ÷ L',`60 × ${fmt(d)} = ${fmt(60*d)}`,`${fmt(60*d)} ÷ ${L} = <b>${al}°</b>`],tip:'Retourne la règle du 1 pour 60.'}},
+()=>{const L=P([15,30,60,120]),a=L/60;return{t:'Écart pour 1°',ro:[['Erreur','1°'],['Distance',L+' NM']],
+ q:`Quel écart latéral produit une erreur de route de 1° après ${L} NM ?`,u:'NM',a,ok:near(.05),
+ s:['d ≈ L × 1 ÷ 60',`${L} ÷ 60 = <b>${fmt(a)} NM</b>`],tip:'120 NM → 2 · 60 → 1 · 30 → 1/2 · 15 → 1/4.'}}
 ]},
 /* ------------------------------------------------------------------ */
 {id:'vent', title:'Vent et composantes',
