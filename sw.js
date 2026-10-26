@@ -1,5 +1,5 @@
 // Learning IFR : cache hors ligne. Ajouter chaque nouveau fichier de modules/ dans SHELL et changer VERSION.
-const VERSION = 'v8';
+const VERSION = 'v9';
 const CACHE = 'learning-ifr-' + VERSION;
 const SHELL = [
   './', './index.html', './manifest.webmanifest',

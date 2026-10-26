@@ -74,6 +74,53 @@ gens:[
  tip:'Utile pour virer au chrono avec un compas en panne : 90° = 30 s, 180° = 1 min.'}}
 ]},
 /* ------------------------------------------------------------------ */
+{id:'facteur-base', title:'Temps sans vent, facteur de base',
+memo:`
+<h3>Définitions</h3>
+<dl>
+<dt>Facteur de base</dt><dd>Fb = 60 ÷ Vp : minutes pour parcourir 1 NM (Vp en kt)</dd>
+<dt>Temps sans vent</dt><dd>Tsv (min) = Fb × D (NM)</dd>
+<dt>Inverse de Fb</dt><dd>1 ÷ Fb = Vp ÷ 60 : NM parcourus en 1 min</dd>
+<dt>En Mach</dt><dd>Vp (NM/min) ≈ 10 × Mach (M 0,78 → 7,8 NM/min)</dd>
+</dl>
+<h3>Facteurs de base à connaître</h3>
+<dl>
+<dt>60 kt</dt><dd>Fb 1 · 1 NM/min</dd>
+<dt>80 kt</dt><dd>Fb 3/4 (0,75) · 1,3 NM/min</dd>
+<dt>90 kt</dt><dd>Fb 2/3 (0,67) · 1,5 NM/min</dd>
+<dt>100 kt</dt><dd>Fb 0,6 · 1,7 NM/min</dd>
+<dt>120 kt</dt><dd>Fb 0,5 · 2 NM/min</dd>
+<dt>150 kt</dt><dd>Fb 0,4 · 2,5 NM/min</dd>
+<dt>180 kt</dt><dd>Fb 1/3 (0,33) · 3 NM/min</dd>
+<dt>240 kt</dt><dd>Fb 1/4 (0,25) · 4 NM/min</dd>
+</dl>
+<h3>Pièges</h3>
+<ul><li>Unités cohérentes : NM avec kt, km avec km/h.</li>
+<li>Le temps sans vent se calcule avec la vitesse propre ; le vent vient ensuite le corriger (vitesse sol).</li>
+<li>Exemple : 120 kt et 40 NM → Fb 0,5 → Tsv = 0,5 × 40 = 20 min.</li></ul>`,
+gens:[
+()=>{const v=P([60,80,90,100,120,150,180,200,240,300]),a=60/v;return{t:'Facteur de base',ro:[['Vp',v+' kt']],
+ q:`Quel est le facteur de base à ${v} kt de vitesse propre ?`,u:'min/NM',a,ok:near(.03),
+ s:['Fb = 60 ÷ Vp',`60 ÷ ${v} = <b>${fmt(a)}</b>`],tip:'Repères : 120 kt → 0,5 ; 150 kt → 0,4 ; 180 kt → 1/3.'}},
+()=>{const v=P([60,80,90,100,120,150,180,240]),fb=60/v,d=P(v%60===0||v===150||v===100||v===80?[10,12,15,20,25,30,40,45,50,60]:[9,12,15,18,24,30,36,45]),a=fb*d;
+ return{t:'Temps sans vent',ro:[['Vp',v+' kt'],['D',d+' NM']],
+ q:`Vitesse propre ${v} kt, distance ${d} NM. Quel est le temps sans vent ?`,u:'min',a,ok:pct(.03,.5),
+ s:[`Fb = 60 ÷ ${v} = ${fmt(fb)}`,`Tsv = Fb × D = ${fmt(fb)} × ${d} = <b>${fmt(a)} min</b>`],
+ tip:'Calcule d\'abord Fb, puis multiplie par la distance.'}},
+()=>{const v=P([80,90,100,120,150,180,240,300]),a=v/60;return{t:'Distance en 1 minute',ro:[['Vp',v+' kt']],
+ q:`À ${v} kt, combien de NM parcours-tu en une minute ?`,u:'NM',a,ok:near(.1),
+ s:['1 ÷ Fb = Vp ÷ 60',`${v} ÷ 60 = <b>${fmt(a)} NM</b>`],tip:"C'est l'inverse du facteur de base."}},
+()=>{const m=P([.5,.6,.7,.72,.75,.78,.8,.82,.85]),a=10*m;return{t:'Vitesse en NM/min depuis le Mach',ro:[['Mach',fmt(m)]],
+ q:`En croisière à Mach ${fmt(m)}, combien de NM parcours-tu par minute (approximation) ?`,u:'NM/min',a,ok:near(.15),
+ s:['Vp (NM/min) ≈ 10 × Mach',`10 × ${fmt(m)} = <b>${fmt(a)} NM/min</b>`],tip:'Valable en altitude, où la vitesse du son est voisine de 600 kt.'}},
+()=>{const m=P([.6,.7,.75,.8]),nm=10*m,t=P([10,12,15,20,30]),d=nm*t;return{t:'Temps de vol en Mach',ro:[['Mach',fmt(m)],['D',fmt(d)+' NM']],
+ q:`À Mach ${fmt(m)}, combien de minutes pour parcourir ${fmt(d)} NM ?`,u:'min',a:t,ok:near(.5),
+ s:[`Vp ≈ 10 × ${fmt(m)} = ${fmt(nm)} NM/min`,`${fmt(d)} ÷ ${fmt(nm)} = <b>${t} min</b>`],tip:'Repasse en NM par minute, puis divise.'}},
+()=>{const v=P([60,80,90,100,120,150,180]),fb=60/v,d=P([10,15,20,30,40]),t=fb*d;return{t:'Retrouver la vitesse',ro:[['D',d+' NM'],['Tsv',fmt(t)+' min']],
+ q:`Sans vent, tu parcours ${d} NM en ${fmt(t)} minutes. Quelle est ta vitesse propre ?`,u:'kt',a:v,ok:pct(.03,2),
+ s:[`Fb = Tsv ÷ D = ${fmt(t)} ÷ ${d} = ${fmt(fb)}`,`Vp = 60 ÷ Fb = 60 ÷ ${fmt(fb)} = <b>${v} kt</b>`],tip:'Ou directement : Vp = D ÷ T × 60.'}}
+]},
+/* ------------------------------------------------------------------ */
 {id:'virages', title:'Virages',
 memo:`
 <h3>Inclinaison au taux 1</h3>
